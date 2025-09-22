@@ -559,7 +559,7 @@
 
 *Бэкенд:*
 - Java (Spring Boot)
-- Go (Gorilla websocket)
+- Go (только коммуникационный сервис)
 - Hibernate
 - PostgreSQL
 - Redis
