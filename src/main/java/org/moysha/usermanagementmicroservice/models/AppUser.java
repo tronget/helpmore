@@ -10,9 +10,6 @@ import org.hibernate.type.SqlTypes;
 import org.moysha.usermanagementmicroservice.enums.UserRole;
 
 import java.time.OffsetDateTime;
-import java.util.HashSet;
-import java.util.Set;
-
 @Data
 @Builder
 @NoArgsConstructor
@@ -50,6 +47,5 @@ public class AppUser {
 
     @Column(name = "created_at", nullable = false, insertable = false, updatable = false)
     private OffsetDateTime createdAt;
-
 
 }

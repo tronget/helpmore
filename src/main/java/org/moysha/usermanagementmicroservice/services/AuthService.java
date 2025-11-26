@@ -56,7 +56,6 @@ public class AuthService {
                         .body("User is banned until " + bannedTill);
             }
 
-            // обновляем токен
             user.setToken(request.getToken());
             userRepository.save(user);
             System.err.println("Updated token for user with email {}"+ email);
