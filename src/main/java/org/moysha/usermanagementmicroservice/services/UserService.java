@@ -2,10 +2,7 @@ package org.moysha.usermanagementmicroservice.services;
 
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
-import org.moysha.usermanagementmicroservice.dto.user.UserProfileRequest;
-import org.moysha.usermanagementmicroservice.dto.user.UserProfileResponse;
-import org.moysha.usermanagementmicroservice.dto.user.UserRequest;
-import org.moysha.usermanagementmicroservice.dto.user.UserResponse;
+import org.moysha.usermanagementmicroservice.dto.user.*;
 import org.moysha.usermanagementmicroservice.enums.UserRole;
 import org.moysha.usermanagementmicroservice.models.AppUser;
 import org.moysha.usermanagementmicroservice.models.UserInfo;
@@ -14,6 +11,8 @@ import org.moysha.usermanagementmicroservice.repositories.UserRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.OffsetDateTime;
 import java.util.Collection;
 import java.util.Collections;
@@ -145,5 +144,21 @@ public class UserService {
                 user.getCreatedAt(),
                 profileResponse
         );
+    }
+
+    @Transactional
+    public void userUpdateRate(UserUpdateRateRequest request){
+        UserInfo profile = userInfoRepository.findByUserId(request.getUserId())
+                .orElseThrow(() -> new EntityNotFoundException("User %d profile not found".formatted(request.getUserId())));
+
+        double avgRate = profile.getRate().doubleValue();
+        int count = request.getCount();
+        int newMark = request.getNewMark();
+
+        double newRate = ((avgRate * count) + newMark) / (count + 1);
+        BigDecimal roundedRate = BigDecimal.valueOf(newRate).setScale(2, RoundingMode.HALF_UP);
+
+        profile.setRate(roundedRate);
+        userInfoRepository.save(profile);
     }
 }

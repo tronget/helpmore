@@ -2,11 +2,7 @@ package org.moysha.usermanagementmicroservice.controllers;
 
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import org.moysha.usermanagementmicroservice.dto.user.UserBanRequest;
-import org.moysha.usermanagementmicroservice.dto.user.UserProfileRequest;
-import org.moysha.usermanagementmicroservice.dto.user.UserRequest;
-import org.moysha.usermanagementmicroservice.dto.user.UserResponse;
-import org.moysha.usermanagementmicroservice.dto.user.UserRoleUpdateRequest;
+import org.moysha.usermanagementmicroservice.dto.user.*;
 import org.moysha.usermanagementmicroservice.services.UserService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -80,4 +76,14 @@ public class UserController {
         userService.deleteUser(id);
         return ResponseEntity.noContent().build();
     }
+
+    @PostMapping("/rate")
+    public ResponseEntity<Void> addMark(
+            @Valid @RequestBody UserUpdateRateRequest addMark
+    ) {
+        userService.userUpdateRate(addMark);
+        return ResponseEntity.ok().build();
+    }
+
+
 }
