@@ -14,6 +14,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.client.HttpClientErrorException;
 
 @RestController
 @RequestMapping("/auth")
@@ -27,16 +28,16 @@ public class AuthController {
         try {
             ResponseEntity<String> response = authService.loginUser(request);
             return response;
-        } catch (org.springframework.web.client.HttpClientErrorException e) {
+        } catch (HttpClientErrorException e) {
             return ResponseEntity.status(e.getStatusCode()).body(e.getResponseBodyAsString());
         }
     }
 
-    @GetMapping("/check")
-    public ResponseEntity<UserResponse> checkAuthorization(Authentication authentication) {
-        if (authentication == null || !(authentication.getPrincipal() instanceof AppUser)) {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
-        }
-        return ResponseEntity.status(HttpStatus.OK).build();
-    }
+//    @GetMapping("/check")
+//    public ResponseEntity<UserResponse> checkAuthorization(Authentication authentication) {
+//        if (authentication == null || !(authentication.getPrincipal() instanceof AppUser)) {
+//            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+//        }
+//        return ResponseEntity.status(HttpStatus.OK).build();
+//    }
 }
