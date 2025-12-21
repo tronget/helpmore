@@ -37,7 +37,6 @@ public class AppUser {
     private String email;
 
     @Enumerated(EnumType.STRING)
-    @JdbcTypeCode(SqlTypes.NAMED_ENUM)
     @Column(name = "role", nullable = false, columnDefinition = "user_role")
     @Builder.Default
     private UserRole role = UserRole.user;
