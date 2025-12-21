@@ -25,6 +25,7 @@ public class AuthController {
 
     @PostMapping("/yandex")
     public ResponseEntity<String> authenticateWithYandex(@RequestBody YandexTokenRequest request) {
+        System.err.println("Request: POST /auth/yandex");
         try {
             ResponseEntity<String> response = authService.loginUser(request);
             return response;

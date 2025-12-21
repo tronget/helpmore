@@ -58,4 +58,8 @@ public class UserInfo {
     @Column(name = "rate", nullable = false, precision = 3, scale = 2)
     @Builder.Default
     private BigDecimal rate = BigDecimal.ZERO;
+
+    @Column(name = "rate_count", nullable = false)
+    @Builder.Default
+    private Integer rateCount = 0;
 }

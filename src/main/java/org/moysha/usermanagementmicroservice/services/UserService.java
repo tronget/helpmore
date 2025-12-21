@@ -43,6 +43,20 @@ public class UserService {
         return toResponse(user, profile);
     }
 
+    public UserMeResponse getCurrentUser(AppUser user) {
+        UserInfo profile = userInfoRepository.findByUserId(user.getId()).orElse(null);
+        return new UserMeResponse(
+                user.getId(),
+                user.getEmail(),
+                user.getRole().name().toLowerCase(),
+                profile != null ? profile.getName() : null,
+                profile != null ? profile.getSurname() : null,
+                profile != null ? profile.getPhoneNumber() : null,
+                profile != null ? profile.getTelegram() : null,
+                profile != null ? profile.getRate() : null
+        );
+    }
+
 
     @Transactional
     public UserResponse updateRole(Integer id, UserRole role) {
@@ -152,13 +166,14 @@ public class UserService {
                 .orElseThrow(() -> new EntityNotFoundException("User %d profile not found".formatted(request.getUserId())));
 
         double avgRate = profile.getRate().doubleValue();
-        int count = request.getCount();
+        int count = profile.getRateCount() != null ? profile.getRateCount() : 0;
         int newMark = request.getNewMark();
 
         double newRate = ((avgRate * count) + newMark) / (count + 1);
         BigDecimal roundedRate = BigDecimal.valueOf(newRate).setScale(2, RoundingMode.HALF_UP);
 
         profile.setRate(roundedRate);
+        profile.setRateCount(count + 1);
         userInfoRepository.save(profile);
     }
 }

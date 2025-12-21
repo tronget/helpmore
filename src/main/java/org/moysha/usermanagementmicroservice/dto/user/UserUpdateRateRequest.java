@@ -13,9 +13,6 @@ public class UserUpdateRateRequest {
     private Integer userId;
 
     @NotNull
-    private Integer count;
-
-    @NotNull
     private Integer newMark;
 
 }
