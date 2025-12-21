@@ -1,0 +1,11 @@
+package org.moysha.usermanagementmicroservice.dto;
+
+import com.fasterxml.jackson.annotation.JsonProperty;
+import jakarta.validation.constraints.NotBlank;
+import lombok.Data;
+
+@Data
+public class YandexTokenRequest {
+
+    private String token;
+}
