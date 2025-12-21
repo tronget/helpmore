@@ -1,0 +1,23 @@
+spring:
+  servlet:
+    multipart:
+      max-file-size: 10MB
+      max-request-size: 10MB
+  application:
+    name: ManagementService
+server:
+  port: 8181
+datasource:
+  url: jdbc:postgresql://localhost:5432/postgres
+  driverClassName: org.postgresql.Driver
+  username: myuser
+  password: secret
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+    properties:
+      hibernate:
+        format_sql: true
+
+YANDEX_INFO_URL: "https://login.yandex.ru/info?format=json"
