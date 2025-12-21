@@ -19,8 +19,5 @@ datasource:
     properties:
       hibernate:
         format_sql: true
-token:
-  signing:
-    key: NjU0MzIxMDEwMjM0NTY3ODkwMTIzNDU2Nzg5MDEyMzQ1Njc4OTAxMjM0NTY=
 
 YANDEX_INFO_URL: "https://login.yandex.ru/info?format=json"
