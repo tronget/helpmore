@@ -22,5 +22,4 @@ public class ReportResponse {
     private String title;
     private String description;
     private OffsetDateTime createdAt;
-    private OffsetDateTime updatedAt;
 }

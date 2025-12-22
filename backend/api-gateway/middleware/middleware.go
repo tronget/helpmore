@@ -2,7 +2,7 @@ package middleware
 
 import (
 	"database/sql"
-	"encoding/json"
+	"errors"
 	"log"
 	"net/http"
 	"strings"
@@ -13,8 +13,6 @@ import (
 
 func YandexToken(db *storage.DB) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
-		client := &http.Client{Timeout: 5 * time.Second}
-
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			auth := r.Header.Get("Authorization")
 			auth = strings.TrimPrefix(auth, "Bearer ")
@@ -25,99 +23,42 @@ func YandexToken(db *storage.DB) func(http.Handler) http.Handler {
 			}
 
 			var userInfo struct {
-				email string `db:"email"`
-				role  string `db:"role"`
+				Email string `db:"email"`
+				Role  string `db:"role"`
 			}
-			db.Get(&userInfo, "SELECT role from app_user WHERE token=$1", auth)
-			if userInfo.role != "" && userInfo.email != "" {
-				r.Header.Set("X-Auth-Role", userInfo.role)
-				r.Header.Set("X-Auth-Email", userInfo.email)
-				next.ServeHTTP(w, r)
+			db.Get(&userInfo, "SELECT email, role from app_user WHERE token=$1", auth)
+			if userInfo.Role == "" || userInfo.Email == "" {
+				http.Error(w, "Invalid Authorization header (user doesnt exist)", http.StatusUnauthorized)
 				return
 			}
 
-			req, err := http.NewRequestWithContext(r.Context(), http.MethodGet, "https://login.yandex.ru/info?format=json", nil)
-			if err != nil {
-				http.Error(w, "Internal error", http.StatusInternalServerError)
-				return
-			}
-			req.Header.Set("Authorization", auth)
-
-			resp, err := client.Do(req)
-			if err != nil {
-				http.Error(w, "Failed to verify token", http.StatusUnauthorized)
-				return
-			}
-			defer resp.Body.Close()
-
-			if resp.StatusCode != http.StatusOK {
-				http.Error(w, "Invalid token", http.StatusUnauthorized)
-				return
-			}
-
-			var info struct {
-				DefaultEmail string `json:"default_email"`
-			}
-
-			if err := json.NewDecoder(resp.Body).Decode(&info); err != nil {
-				http.Error(w, "Failed to parse token info", http.StatusUnauthorized)
-				return
-			}
-
-			if info.DefaultEmail == "" {
-				http.Error(w, "Invalid info payload", http.StatusUnauthorized)
-				return
-			}
-
-			r.Header.Set("X-Yandex-Email", info.DefaultEmail)
-
+			r.Header.Set("X-Auth-Role", userInfo.Role)
+			r.Header.Set("X-Auth-Email", userInfo.Email)
 			next.ServeHTTP(w, r)
 		})
 	}
 
 }
 
-func IsExistingUser(db *storage.DB) func(http.Handler) http.Handler {
+func EnsureUserAllowed(db *storage.DB) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			email := r.Header.Get("X-Yandex-Email")
-
-			var exists bool
-
-			row := db.QueryRow("SELECT EXISTS(SELECT 1 FROM app_user WHERE email=$1)", email)
-			if err := row.Scan(&exists); err != nil {
-				http.Error(w, "Internal error", http.StatusInternalServerError)
-				log.Println("serialize user existence check:", err)
-				return
-			}
-
-			if !exists {
-				http.Error(w, "User does not exist", http.StatusUnauthorized)
-				return
-			}
-
-			next.ServeHTTP(w, r)
-		})
-	}
-}
-
-func IsBanned(db *storage.DB) func(http.Handler) http.Handler {
-	return func(next http.Handler) http.Handler {
-		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			email := r.Header.Get("X-Yandex-Email")
+			email := r.Header.Get("X-Auth-Email")
 
 			var bannedTill sql.NullTime
 
 			row := db.QueryRow(`SELECT banned_till FROM app_user WHERE email=$1`, email)
 			if err := row.Scan(&bannedTill); err != nil {
+				if errors.Is(err, sql.ErrNoRows) {
+					http.Error(w, "User does not exist", http.StatusUnauthorized)
+					return
+				}
 				http.Error(w, "Internal error", http.StatusInternalServerError)
-				log.Println("serialize banned check:", err)
+				log.Println("serialize user existence/banned check:", err)
 				return
 			}
 
-			isBanned := bannedTill.Valid && bannedTill.Time.After(time.Now())
-
-			if isBanned {
+			if bannedTill.Valid && bannedTill.Time.After(time.Now()) {
 				http.Error(w, "User is banned", http.StatusForbidden)
 				return
 			}

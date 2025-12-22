@@ -114,8 +114,7 @@ public class ReportService {
                 report.getType(),
                 report.getTitle(),
                 report.getDescription(),
-                report.getCreatedAt(),
-                report.getUpdatedAt()
+                report.getCreatedAt()
         );
     }
 }

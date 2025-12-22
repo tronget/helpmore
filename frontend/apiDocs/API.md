@@ -29,7 +29,7 @@
 - `YandexTokenRequest`: `{"token": "yandex-oauth-token"}` (обязателен)
 - `ReportCreateRequest`: `{"reportedUserId": int, "type": "spam|fraud|insult|illegal|other", "title": string, "description": string|null}` (`title` до 255, `description` до 2048)
 - `ReportUpdateRequest`: `{"type": "spam|fraud|insult|illegal|other"|null, "title": string|null, "description": string|null}` (обновляет только переданные поля)
-- `ReportResponse`: `{"id": int, "reporterId": int, "reporterName": string|null, "reporterSurname": string|null, "reportedUserId": int, "reportedUserName": string|null, "reportedUserSurname": string|null, "type": "spam|fraud|insult|illegal|other", "title": string, "description": string|null, "createdAt": string, "updatedAt": string}`
+- `ReportResponse`: `{"id": int, "reporterId": int, "reporterName": string|null, "reporterSurname": string|null, "reportedUserId": int, "reportedUserName": string|null, "reportedUserSurname": string|null, "type": "spam|fraud|insult|illegal|other", "title": string, "description": string|null, "createdAt": string}`
 - `BugReportCreateRequest`: `{"title": string, "description": string|null}` (`title` до 255, `description` до 2048)
 - `BugReportUpdateRequest`: `{"title": string|null, "description": string|null}` (обновляет только переданные поля)
 - `BugReportResponse`: `{"id": int, "userId": int, "userName": string|null, "userSurname": string|null, "title": string, "description": string|null, "createdAt": string}`

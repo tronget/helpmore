@@ -42,18 +42,18 @@ func main() {
 		r.Handle("/auth/*", userProxy)
 
 		r.Group(func(r chi.Router) {
-			r.Use(middleware.YandexToken(db), middleware.IsExistingUser(db), middleware.IsBanned(db))
+			r.Use(middleware.YandexToken(db), middleware.EnsureUserAllowed(db))
 			r.Handle("/*", userProxy)
 		})
 	})
 
 	r.Route("/comm", func(r chi.Router) {
-		r.Use(middleware.YandexToken(db), middleware.IsExistingUser(db), middleware.IsBanned(db))
+		r.Use(middleware.YandexToken(db), middleware.EnsureUserAllowed(db))
 		r.Handle("/*", commProxy)
 	})
 
 	r.Route("/serv", func(r chi.Router) {
-		r.Use(middleware.YandexToken(db), middleware.IsExistingUser(db), middleware.IsBanned(db))
+		r.Use(middleware.YandexToken(db), middleware.EnsureUserAllowed(db))
 		r.Handle("/*", servProxy)
 	})
 
