@@ -23,8 +23,7 @@ public class BugReport {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(
             name = "user_id",
-            nullable = false,
-            foreignKey = @ForeignKey(name = "bug_report_user_id_fkey")
+            nullable = false
     )
     private AppUser user;
 

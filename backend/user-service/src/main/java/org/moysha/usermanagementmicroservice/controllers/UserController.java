@@ -95,14 +95,14 @@ public class UserController {
         return ResponseEntity.noContent().build();
     }
 
-    @PostMapping("/rate")
-    public ResponseEntity<Void> addMark(
-            @Valid @RequestBody UserUpdateRateRequest addMark
-    ) {
-        System.err.println("Request: POST /users/rate");
-        userService.userUpdateRate(addMark);
-        return ResponseEntity.ok().build();
-    }
+//    @PostMapping("/rate")
+//    public ResponseEntity<Void> addMark(
+//            @Valid @RequestBody UserUpdateRateRequest addMark
+//    ) {
+//        System.err.println("Request: POST /users/rate");
+//        userService.userUpdateRate(addMark);
+//        return ResponseEntity.ok().build();
+//    }
 
 
 }

@@ -18,6 +18,7 @@ import lombok.Getter;
 import lombok.Setter;
 import org.moysha.managementservice.domain.category.CategoryEntity;
 import org.moysha.managementservice.domain.user.AppUserEntity;
+import org.hibernate.annotations.ColumnTransformer;
 
 @Getter
 @Setter
@@ -45,10 +46,12 @@ public class ServiceEntity {
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
+    @ColumnTransformer(read = "upper(status::text)", write = "lower(?)::service_status")
     private ServiceStatus status = ServiceStatus.ACTIVE;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
+    @ColumnTransformer(read = "upper(type::text)", write = "lower(?)::service_type")
     private ServiceType type;
 
     @Column(nullable = false, precision = 10, scale = 2)

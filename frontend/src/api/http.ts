@@ -34,6 +34,34 @@ export const requestJson = async <T>(
     headers['Content-Type'] = 'application/json';
   }
 
+  // Attach stored Yandex OAuth token to all non-auth requests by default.
+  const hasAuthHeader = Object.keys(headers).some((key) => key.toLowerCase() === 'authorization');
+  const isAuthRequest = (() => {
+    try {
+      const url = new URL(input);
+      return url.pathname.includes('/auth');
+    } catch {
+      return input.includes('/auth');
+    }
+  })();
+
+  if (!hasAuthHeader && !isAuthRequest) {
+    const rawToken = typeof localStorage !== 'undefined' ? localStorage.getItem('auth.token') : null;
+    const token = rawToken
+      ? (() => {
+          try {
+            return JSON.parse(rawToken);
+          } catch {
+            return rawToken;
+          }
+        })()
+      : null;
+
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`;
+    }
+  }
+
   try {
     const response = await axios.request<T>({
       url: input,

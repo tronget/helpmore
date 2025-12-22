@@ -20,7 +20,7 @@ import java.util.Optional;
 
 @Component
 @RequiredArgsConstructor
-public class YandexTokenAuthenticationFilter extends OncePerRequestFilter {
+public class SecurityFilter extends OncePerRequestFilter {
 
     private final UserRepository userRepository;
 
@@ -30,30 +30,23 @@ public class YandexTokenAuthenticationFilter extends OncePerRequestFilter {
             HttpServletResponse response,
             FilterChain filterChain
     ) throws ServletException, IOException {
+        String role = request.getHeader("X-Auth-Role");
+        String email = request.getHeader("X-Auth-Email");
 
-        String authHeader = request.getHeader("Authorization");
-        if (authHeader == null || !authHeader.startsWith("Bearer ")) {
-            filterChain.doFilter(request, response);
-            return;
+        if (email != null && role != null && SecurityContextHolder.getContext().getAuthentication() == null) {
+            Optional<AppUser> userOpt = userRepository.findByEmail(email);
+
+            if (userOpt.isPresent()) {
+                AppUser user = userOpt.get();
+
+                GrantedAuthority authority = new SimpleGrantedAuthority("ROLE_" + role);
+
+                UsernamePasswordAuthenticationToken authentication =
+                        new UsernamePasswordAuthenticationToken(user, null, List.of(authority));
+
+                SecurityContextHolder.getContext().setAuthentication(authentication);
+            }
         }
-
-        String token = authHeader.substring(7);
-
-        Optional<AppUser> optionalUser = userRepository.findByToken(token);
-        if (optionalUser.isEmpty()) {
-            filterChain.doFilter(request, response);
-            return;
-        }
-
-        AppUser user = optionalUser.get();
-
-        GrantedAuthority authority =
-                new SimpleGrantedAuthority("ROLE_" + user.getRole().name());
-
-        UsernamePasswordAuthenticationToken authentication =
-                new UsernamePasswordAuthenticationToken(user, null, List.of(authority));
-
-        SecurityContextHolder.getContext().setAuthentication(authentication);
 
         filterChain.doFilter(request, response);
     }

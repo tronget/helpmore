@@ -12,30 +12,33 @@ import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 @Configuration
 public class CorsConfig {
 
-    @Bean
-    public CorsConfigurationSource corsConfigurationSource() {
-        var corsConfiguration = new CorsConfiguration();
-        corsConfiguration.setAllowedOrigins(List.of("http://localhost:5173"));
-        corsConfiguration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
-        corsConfiguration.setAllowedHeaders(List.of("*"));
-        corsConfiguration.setAllowCredentials(true);
+    // @Bean
+    // public CorsConfigurationSource corsConfigurationSource() {
+    //     var corsConfiguration = new CorsConfiguration();
+    //     corsConfiguration.setAllowedOrigins(List.of(
+    //         "http://localhost:8000",
+    //         "http://localhost:5173"
+    //     ));
+    //     corsConfiguration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
+    //     corsConfiguration.setAllowedHeaders(List.of("*"));
+    //     corsConfiguration.setAllowCredentials(true);
 
-        var source = new UrlBasedCorsConfigurationSource();
-        source.registerCorsConfiguration("/**", corsConfiguration);
-        return source;
-    }
+    //     var source = new UrlBasedCorsConfigurationSource();
+    //     source.registerCorsConfiguration("/**", corsConfiguration);
+    //     return source;
+    // }
 
-    @Bean
-    public WebMvcConfigurer corsConfigurer() {
-        return new WebMvcConfigurer() {
-            @Override
-            public void addCorsMappings(CorsRegistry registry) {
-                registry.addMapping("/**")
-                    .allowedOrigins("http://localhost:5173")
-                    .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS")
-                    .allowedHeaders("*")
-                    .allowCredentials(true);
-            }
-        };
-    }
+    // @Bean
+    // public WebMvcConfigurer corsConfigurer() {
+    //     return new WebMvcConfigurer() {
+    //         @Override
+    //         public void addCorsMappings(CorsRegistry registry) {
+    //             registry.addMapping("/**")
+    //                 .allowedOrigins("http://localhost:5173")
+    //                 .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS")
+    //                 .allowedHeaders("*")
+    //                 .allowCredentials(true);
+    //         }
+    //     };
+    // }
 }

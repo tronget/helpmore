@@ -1,5 +1,5 @@
-export const USER_SERVICE_BASE_URL = 'http://localhost:8282';
+const API_GATEWAY_BASE_URL = 'http://localhost:8000';
 
-export const MARKETPLACE_BASE_URL = 'http://localhost:8181';
+export const USER_SERVICE_BASE_URL = `${API_GATEWAY_BASE_URL}/user`;
 
-export const MARKETPLACE_API_BASE_URL = `${MARKETPLACE_BASE_URL}/api`;
+export const MARKETPLACE_API_BASE_URL = `${API_GATEWAY_BASE_URL}/serv/api`;

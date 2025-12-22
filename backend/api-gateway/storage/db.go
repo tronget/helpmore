@@ -10,7 +10,6 @@ import (
 )
 
 type DB struct {
-	// wrapper around sqlx.DB with simple structured logging
 	X      *sqlx.DB
 	logger *log.Logger
 }

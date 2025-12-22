@@ -29,8 +29,7 @@ public class UserInfo {
     @OneToOne(fetch = FetchType.LAZY)
     @JoinColumn(
             name = "user_id",
-            nullable = false,
-            foreignKey = @ForeignKey(name = "user_info_user_id_fkey")
+            nullable = false
     )
     private AppUser user;
 
@@ -59,7 +58,7 @@ public class UserInfo {
     @Builder.Default
     private BigDecimal rate = BigDecimal.ZERO;
 
-    @Column(name = "rate_count", nullable = false)
-    @Builder.Default
-    private Integer rateCount = 0;
+//    @Column(name = "rate_count", nullable = false)
+//    @Builder.Default
+//    private Integer rateCount = 0;
 }

@@ -48,7 +48,6 @@ public class ReportService {
 
         Report report = Report.builder()
                 .reporter(reporter)
-                .user(reporter)
                 .reportedUser(reportedUser)
                 .type(request.getType())
                 .title(request.getTitle())

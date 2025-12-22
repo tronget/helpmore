@@ -160,20 +160,20 @@ public class UserService {
         );
     }
 
-    @Transactional
-    public void userUpdateRate(UserUpdateRateRequest request){
-        UserInfo profile = userInfoRepository.findByUserId(request.getUserId())
-                .orElseThrow(() -> new EntityNotFoundException("User %d profile not found".formatted(request.getUserId())));
-
-        double avgRate = profile.getRate().doubleValue();
-        int count = profile.getRateCount() != null ? profile.getRateCount() : 0;
-        int newMark = request.getNewMark();
-
-        double newRate = ((avgRate * count) + newMark) / (count + 1);
-        BigDecimal roundedRate = BigDecimal.valueOf(newRate).setScale(2, RoundingMode.HALF_UP);
-
-        profile.setRate(roundedRate);
-        profile.setRateCount(count + 1);
-        userInfoRepository.save(profile);
-    }
+//    @Transactional
+//    public void userUpdateRate(UserUpdateRateRequest request){
+//        UserInfo profile = userInfoRepository.findByUserId(request.getUserId())
+//                .orElseThrow(() -> new EntityNotFoundException("User %d profile not found".formatted(request.getUserId())));
+//
+//        double avgRate = profile.getRate().doubleValue();
+//        int count = profile.getRateCount() != null ? profile.getRateCount() : 0;
+//        int newMark = request.getNewMark();
+//
+//        double newRate = ((avgRate * count) + newMark) / (count + 1);
+//        BigDecimal roundedRate = BigDecimal.valueOf(newRate).setScale(2, RoundingMode.HALF_UP);
+//
+//        profile.setRate(roundedRate);
+//        profile.setRateCount(count + 1);
+//        userInfoRepository.save(profile);
+//    }
 }

@@ -23,25 +23,15 @@ public class Report {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(
-            name = "reporter_id",
-            nullable = false,
-            foreignKey = @ForeignKey(name = "report_reporter_id_fkey")
+            name = "user_id",
+            nullable = false
     )
     private AppUser reporter;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(
-            name = "user_id",
-            nullable = false,
-            foreignKey = @ForeignKey(name = "report_user_id_fkey")
-    )
-    private AppUser user;
-
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(
             name = "reported_user_id",
-            nullable = false,
-            foreignKey = @ForeignKey(name = "report_reported_user_id_fkey")
+            nullable = false
     )
     private AppUser reportedUser;
 

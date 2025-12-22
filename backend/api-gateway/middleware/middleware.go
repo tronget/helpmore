@@ -24,8 +24,17 @@ func YandexToken(db *storage.DB) func(http.Handler) http.Handler {
 				return
 			}
 
-			var email string
-			db.Get(&email, "SELECT email from app_user WHERE token=$1", auth)
+			var userInfo struct {
+				email string `db:"email"`
+				role  string `db:"role"`
+			}
+			db.Get(&userInfo, "SELECT role from app_user WHERE token=$1", auth)
+			if userInfo.role != "" && userInfo.email != "" {
+				r.Header.Set("X-Auth-Role", userInfo.role)
+				r.Header.Set("X-Auth-Email", userInfo.email)
+				next.ServeHTTP(w, r)
+				return
+			}
 
 			req, err := http.NewRequestWithContext(r.Context(), http.MethodGet, "https://login.yandex.ru/info?format=json", nil)
 			if err != nil {

@@ -40,7 +40,24 @@ interface AuthState {
   setUser: (user: AuthUser | null) => void;
 }
 
-const tokenAtom = atomWithStorage<string | null>('auth.token', null);
+const tokenAtom = atomWithStorage<string | null>('auth.token', null, {
+  getItem: (key, initialValue) => {
+    if (typeof localStorage === 'undefined') return initialValue;
+    return localStorage.getItem(key);
+  },
+  setItem: (key, value) => {
+    if (typeof localStorage === 'undefined') return;
+    if (value === null) {
+      localStorage.removeItem(key);
+    } else {
+      localStorage.setItem(key, value);
+    }
+  },
+  removeItem: (key) => {
+    if (typeof localStorage === 'undefined') return;
+    localStorage.removeItem(key);
+  },
+});
 const userAtom = atomWithStorage<AuthUser | null>('auth.user', null);
 const expiresInAtom = atomWithStorage<number | undefined>('auth.expiresIn', undefined);
 const isAuthenticatedAtom = atom((get) => Boolean(get(tokenAtom)));
