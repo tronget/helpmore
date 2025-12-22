@@ -1,9 +1,11 @@
 package middleware
 
 import (
+	"database/sql"
 	"encoding/json"
 	"log"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/tronget/api-gateway/storage"
@@ -15,6 +17,8 @@ func YandexToken(db *storage.DB) func(http.Handler) http.Handler {
 
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			auth := r.Header.Get("Authorization")
+			auth = strings.TrimPrefix(auth, "Bearer ")
+			auth = strings.Trim(auth, "\"")
 			if auth == "" {
 				http.Error(w, "Missing Authorization header", http.StatusUnauthorized)
 				return
@@ -93,7 +97,7 @@ func IsBanned(db *storage.DB) func(http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			email := r.Header.Get("X-Yandex-Email")
 
-			var bannedTill time.Time
+			var bannedTill sql.NullTime
 
 			row := db.QueryRow(`SELECT banned_till FROM app_user WHERE email=$1`, email)
 			if err := row.Scan(&bannedTill); err != nil {
@@ -102,7 +106,7 @@ func IsBanned(db *storage.DB) func(http.Handler) http.Handler {
 				return
 			}
 
-			isBanned := !bannedTill.IsZero() && bannedTill.After(time.Now())
+			isBanned := bannedTill.Valid && bannedTill.Time.After(time.Now())
 
 			if isBanned {
 				http.Error(w, "User is banned", http.StatusForbidden)

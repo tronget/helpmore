@@ -9,6 +9,7 @@ import (
 
 	"github.com/go-chi/chi/v5"
 	"github.com/jmoiron/sqlx"
+	_ "github.com/lib/pq"
 	"github.com/tronget/api-gateway/middleware"
 	"github.com/tronget/api-gateway/storage"
 )
@@ -30,19 +31,19 @@ func main() {
 	dbLogger := log.New(os.Stdout, "db ", log.LstdFlags|log.Lmicroseconds)
 	db := storage.NewDB(dbx, dbLogger)
 
-	authProxy := http.StripPrefix("/auth", proxyURL("http://auth:8001"))
-	commProxy := http.StripPrefix("/comm", proxyURL("http://comm:8002"))
-	servProxy := http.StripPrefix("/serv", proxyURL("http://serv:8003"))
+	userProxy := http.StripPrefix("/user", proxyURL("http://localhost:8282"))
+	commProxy := http.StripPrefix("/comm", proxyURL("http://localhost:8002"))
+	servProxy := http.StripPrefix("/serv", proxyURL("http://localhost:8181"))
 
 	r := chi.NewRouter()
 	r.Use(middleware.CORS)
 
-	r.Route("/auth", func(r chi.Router) {
-		r.Handle("/yandex", authProxy)
+	r.Route("/user", func(r chi.Router) {
+		r.Handle("/auth/*", userProxy)
 
 		r.Group(func(r chi.Router) {
 			r.Use(middleware.YandexToken(db), middleware.IsExistingUser(db), middleware.IsBanned(db))
-			r.Handle("/*", authProxy)
+			r.Handle("/*", userProxy)
 		})
 	})
 
@@ -61,5 +62,7 @@ func main() {
 		port = "8000"
 	}
 	log.Println("gateway on", port)
-	http.ListenAndServe(":"+port, r)
+	if err := http.ListenAndServe(":"+port, r); err != nil {
+		log.Panicf("Failed to start server on port %s: %v", port, err)
+	}
 }
