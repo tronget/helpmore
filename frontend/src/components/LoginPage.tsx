@@ -198,7 +198,7 @@ export function LoginPage({ onLogin }: LoginPageProps) {
               <button
                 type="button"
                 onClick={() => window.open(manualAuthUrl, '_blank', 'noopener,noreferrer')}
-                className="w-full border border-gray-900 text-gray-900 py-3 rounded-xl text-sm font-semibold hover:bg-white"
+                className="w-full bg-primary text-white rounded-xl py-3 hover:bg-primary-light transition-colors text-sm font-semibold"
               >
                 {t('Открыть страницу авторизации')}
               </button>

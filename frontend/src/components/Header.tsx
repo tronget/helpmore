@@ -3,6 +3,8 @@ import logo from 'figma:asset/6ee6e9716cea49265cf2002d25a60b45f5d06fb7.png';
 import { useAuthStore } from '../store/authStore';
 import { AvatarPlaceholder } from './AvatarPlaceholder';
 import { useI18n } from '../i18n/useI18n';
+import { Select, SelectContent, SelectItem, SelectTrigger } from './ui/select';
+import type { Locale } from '../i18n/translations';
 
 interface HeaderProps {
   onNavigateHome: () => void;
@@ -13,7 +15,7 @@ interface HeaderProps {
 
 export function Header({ onNavigateHome, onNavigateProfile, onNavigateChat, onNavigateAdmin }: HeaderProps) {
   const { user } = useAuthStore();
-  const { t, cycleLocale, flag } = useI18n();
+  const { t, locale, setLocale, locales, localeFlagsMap, localeLabelsMap } = useI18n();
   const displayName =
     [user?.profile?.surname, user?.profile?.name, user?.profile?.middleName]
       .filter(Boolean)
@@ -75,12 +77,20 @@ export function Header({ onNavigateHome, onNavigateProfile, onNavigateChat, onNa
             <span className="text-gray-900">{displayName}</span>
           </button>
 
-          <button
-            onClick={cycleLocale}
-            className="flex items-center gap-2 px-3 py-2 hover:bg-gray-50 rounded-lg transition-colors"
-          >
-            <span className="text-xl">{flag}</span>
-          </button>
+          <Select value={locale} onValueChange={(value) => setLocale(value as Locale)}>
+            <SelectTrigger className="w-[148px] justify-between hover:bg-gray-50">
+              <span className="text-xl">{localeFlagsMap[locale]}</span>
+              <span className="text-sm text-gray-900">{localeLabelsMap[locale]}</span>
+            </SelectTrigger>
+            <SelectContent align="end">
+              {locales.map((loc) => (
+                <SelectItem key={loc} value={loc}>
+                  <span className="text-xl">{localeFlagsMap[loc]}</span>
+                  <span>{localeLabelsMap[loc]}</span>
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
       </div>
     </header>

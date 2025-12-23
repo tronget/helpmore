@@ -1,6 +1,13 @@
 import { useCallback } from 'react';
 import { useLocaleStore } from '../store/localeStore';
-import { localeCycle, localeDateLocale, localeFlags, translate, type Locale } from './translations';
+import {
+  localeCycle,
+  localeDateLocale,
+  localeFlags,
+  localeLabels,
+  translate,
+  type Locale,
+} from './translations';
 
 export const useI18n = () => {
   const { locale, setLocale } = useLocaleStore();
@@ -22,6 +29,9 @@ export const useI18n = () => {
     cycleLocale,
     dateLocale: localeDateLocale[locale],
     flag: localeFlags[locale],
+    localeFlagsMap: localeFlags,
+    localeLabelsMap: localeLabels,
+    locales: localeCycle,
     t,
   };
 };

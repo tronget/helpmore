@@ -1,12 +1,11 @@
 import { useState } from 'react';
-import { Search, Plus } from 'lucide-react';
-import { useCategories } from '../hooks/useCategories';
-import { getCategoryIcon } from '../utils/categoryIcons';
+import { Search, Plus, CircleHelp } from 'lucide-react';
 import { ServiceCatalog } from './ServiceCatalog';
 import { OrderCatalog } from './OrderCatalog';
 import { CreateServiceModal } from './CreateServiceModal';
 import { CreateOrderModal } from './CreateOrderModal';
 import { useI18n } from '../i18n/useI18n';
+import { Tooltip, TooltipContent, TooltipTrigger } from './ui/tooltip';
 
 interface HomePageProps {
   onNavigateToService: (serviceId: string) => void;
@@ -19,24 +18,15 @@ export function HomePage({ onNavigateToService, onNavigateToOrder }: HomePagePro
   const [activeTab, setActiveTab] = useState<Tab>('services');
   const [searchQuery, setSearchQuery] = useState('');
   const [appliedSearchQuery, setAppliedSearchQuery] = useState('');
-  const [selectedCategory, setSelectedCategory] = useState<string>('');
   const [showCreateServiceModal, setShowCreateServiceModal] = useState(false);
   const [showCreateOrderModal, setShowCreateOrderModal] = useState(false);
-  const { categories, error: categoriesError } = useCategories();
   const { t } = useI18n();
 
   const handleSearch = () => {
     setAppliedSearchQuery(searchQuery);
   };
 
-  const handleCategoryClick = (categoryName: string) => {
-    setSelectedCategory(categoryName);
-    setAppliedSearchQuery('');
-    setSearchQuery('');
-  };
-
   const handleResetFilters = () => {
-    setSelectedCategory('');
     setAppliedSearchQuery('');
     setSearchQuery('');
   };
@@ -50,7 +40,7 @@ export function HomePage({ onNavigateToService, onNavigateToOrder }: HomePagePro
             <h1 className="text-center mb-8">{t('Найдите услуги и помощь от студентов ИТМО')}</h1>
             
             {/* Search Bar */}
-            <div className="flex gap-3 mb-12">
+            <div className="flex gap-3">
               <div className="flex-1 relative">
                 <input
                   type="text"
@@ -74,25 +64,6 @@ export function HomePage({ onNavigateToService, onNavigateToOrder }: HomePagePro
               </button>
             </div>
 
-            {/* Categories */}
-            <div className="flex flex-wrap gap-3 justify-center">
-              {categories.map((category) => (
-                <button
-                  key={category.id}
-                  onClick={() => handleCategoryClick(category.name)}
-                  className={`px-6 py-3 bg-white rounded-xl border transition-all flex items-center gap-2 ${
-                    selectedCategory === category.name
-                      ? 'border-primary bg-primary-lighter'
-                      : 'border-gray-200 hover:border-primary hover:bg-primary-lighter'
-                  }`}
-                >
-                  <span className="text-gray-900">{category.name}</span>
-                </button>
-              ))}
-              {categories.length === 0 && categoriesError && (
-                <p className="text-sm text-red-500">{t('Не удалось загрузить категории')}</p>
-              )}
-            </div>
           </div>
         </div>
       </div>
@@ -103,26 +74,46 @@ export function HomePage({ onNavigateToService, onNavigateToOrder }: HomePagePro
           <div className="flex gap-8">
             <button
               onClick={() => setActiveTab('services')}
-              className={`py-4 px-6 relative transition-colors ${
+              className={`py-4 px-6 relative transition-colors flex items-center gap-2 ${
                 activeTab === 'services'
                   ? 'text-primary'
                   : 'text-gray-600 hover:text-gray-900'
               }`}
             >
-              {t('Предложения')}
+              <span>{t('Предложения')}</span>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <CircleHelp className="w-4 h-4 opacity-70" />
+                </TooltipTrigger>
+                <TooltipContent side="bottom">
+                  {t(
+                    'Предложения — те услуги, которые предлагают пользователи. Например, вы хотите найти репетитора или грузчика, ищите такие услуги именно здесь.',
+                  )}
+                </TooltipContent>
+              </Tooltip>
               {activeTab === 'services' && (
                 <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary"></div>
               )}
             </button>
             <button
               onClick={() => setActiveTab('orders')}
-              className={`py-4 px-6 relative transition-colors ${
+              className={`py-4 px-6 relative transition-colors flex items-center gap-2 ${
                 activeTab === 'orders'
                   ? 'text-primary'
                   : 'text-gray-600 hover:text-gray-900'
               }`}
             >
-              {t('Заказы')}
+              <span>{t('Заказы')}</span>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <CircleHelp className="w-4 h-4 opacity-70" />
+                </TooltipTrigger>
+                <TooltipContent side="bottom">
+                  {t(
+                    'Заказы — те услуги, которые можно оказать. Сюда вы заходите, когда хотите подзаработать. Ну как доска объявлений в ведьмаке, смотрите заказы и решаете, какой хотите выполнить.',
+                  )}
+                </TooltipContent>
+              </Tooltip>
               {activeTab === 'orders' && (
                 <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary"></div>
               )}
@@ -158,14 +149,14 @@ export function HomePage({ onNavigateToService, onNavigateToOrder }: HomePagePro
         {activeTab === 'services' ? (
           <ServiceCatalog 
             searchQuery={appliedSearchQuery}
-            selectedCategory={selectedCategory}
+            selectedCategory={''}
             onNavigateToService={onNavigateToService}
             onResetFilters={handleResetFilters}
           />
         ) : (
           <OrderCatalog 
             searchQuery={appliedSearchQuery}
-            selectedCategory={selectedCategory}
+            selectedCategory={''}
             onNavigateToOrder={onNavigateToOrder}
             onResetFilters={handleResetFilters}
           />

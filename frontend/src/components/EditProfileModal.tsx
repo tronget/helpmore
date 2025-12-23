@@ -26,6 +26,7 @@ export function EditProfileModal({ onClose }: EditProfileModalProps) {
   const [avatarPreview, setAvatarPreview] = useState<string | null>(
     user?.profile?.avatar ? `data:image/png;base64,${user.profile.avatar}` : null,
   );
+  const [avatarFileName, setAvatarFileName] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -64,6 +65,7 @@ export function EditProfileModal({ onClose }: EditProfileModalProps) {
         const base64 = dataUrl.split(',')[1] ?? null;
         setAvatarPreview(dataUrl);
         setAvatarBase64(base64);
+        setAvatarFileName(file.name);
         setError(null);
       };
       image.onerror = () => {
@@ -196,11 +198,23 @@ export function EditProfileModal({ onClose }: EditProfileModalProps) {
               </div>
               <div>
                 <input
+                  id="avatar-file"
                   type="file"
                   accept="image/*"
                   onChange={(event) => handleAvatarChange(event.target.files?.[0] ?? null)}
-                  className="block text-sm text-gray-600"
+                  aria-hidden="true"
+                  className="sr-only"
+                  style={{ position: 'absolute', opacity: 0, width: 0, height: 0, pointerEvents: 'none' }}
                 />
+                <label
+                  htmlFor="avatar-file"
+                  className="inline-flex items-center justify-center px-4 py-2 rounded-lg border border-gray-300 bg-white text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors cursor-pointer"
+                >
+                  {t('Выбрать файл')}
+                </label>
+                {avatarFileName && (
+                  <p className="text-xs text-gray-500 mt-1">{avatarFileName}</p>
+                )}
                 <p className="text-xs text-gray-500 mt-1">{t('Только изображения, будет сжато до 512×512.')}</p>
               </div>
             </div>

@@ -1,10 +1,13 @@
 import { useMemo, useState } from 'react';
-import { X } from 'lucide-react';
+import { Calendar as CalendarIcon, X } from 'lucide-react';
 import { useCategories } from '../hooks/useCategories';
 import { createService } from '../api/marketplaceService';
 import { useAuthStore } from '../store/authStore';
 import { getCategoryIcon } from '../utils/categoryIcons';
 import { useI18n } from '../i18n/useI18n';
+import { Popover, PopoverContent, PopoverTrigger } from './ui/popover';
+import { Button } from './ui/button';
+import { Calendar } from './ui/calendar';
 
 interface CreateOrderModalProps {
   onClose: () => void;
@@ -18,12 +21,14 @@ export function CreateOrderModal({ onClose }: CreateOrderModalProps) {
     budget: '',
     deadline: '',
     place: '',
+    type: 'payment',
   });
+  const [deadlineDate, setDeadlineDate] = useState<Date | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { categories } = useCategories();
   const { user } = useAuthStore();
-  const { t } = useI18n();
+  const { t, dateLocale } = useI18n();
 
   const selectedCategory = useMemo(
     () => categories.find((cat) => cat.name === formData.category),
@@ -49,6 +54,11 @@ export function CreateOrderModal({ onClose }: CreateOrderModalProps) {
       return;
     }
 
+    if (!deadlineDate) {
+      setError(t('Укажите дату завершения.'));
+      return;
+    }
+
     setIsSubmitting(true);
     setError(null);
 
@@ -60,7 +70,7 @@ export function CreateOrderModal({ onClose }: CreateOrderModalProps) {
         description: formData.description,
         type: 'ORDER',
         price: parsedPrice,
-        barter: false,
+        barter: formData.type === 'barter',
         place: formData.place,
       });
       onClose();
@@ -147,14 +157,36 @@ export function CreateOrderModal({ onClose }: CreateOrderModalProps) {
             </div>
             <div>
               <label className="block mb-2 text-gray-700">{t('Срок выполнения *')}</label>
-              <input
-                type="text"
-                required
-                value={formData.deadline}
-                onChange={(e) => setFormData({ ...formData, deadline: e.target.value })}
-                placeholder={t('15 декабря 2024')}
-                className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary"
-              />
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="w-full justify-start px-4 py-3 h-[46px] rounded-xl border border-gray-300 flex items-center gap-3"
+                  >
+                    <CalendarIcon className="w-4 h-4 text-gray-500" />
+                    {deadlineDate
+                      ? deadlineDate.toLocaleDateString(dateLocale)
+                      : t('Выберите дату')}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="p-2 bg-white rounded-xl shadow-lg" align="start">
+                  <Calendar
+                    className="bg-white rounded-lg"
+                    mode="single"
+                    selected={deadlineDate ?? undefined}
+                    onSelect={(date) => {
+                      setDeadlineDate(date ?? null);
+                      setFormData({
+                        ...formData,
+                        deadline: date ? date.toISOString() : '',
+                      });
+                    }}
+                    initialFocus
+                  />
+                </PopoverContent>
+              </Popover>
+              <input type="hidden" required value={formData.deadline} readOnly />
             </div>
           </div>
 
@@ -169,6 +201,20 @@ export function CreateOrderModal({ onClose }: CreateOrderModalProps) {
               placeholder={t('Например: Онлайн / Биржевая линия')}
               className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary"
             />
+          </div>
+
+          {/* Deal type */}
+          <div>
+            <label className="block mb-2 text-gray-700">{t('Тип сделки *')}</label>
+            <select
+              required
+              value={formData.type}
+              onChange={(e) => setFormData({ ...formData, type: e.target.value })}
+              className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary"
+            >
+              <option value="payment">{t('Оплата')}</option>
+              <option value="barter">{t('Бартер')}</option>
+            </select>
           </div>
 
           {/* Info Box */}
