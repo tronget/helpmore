@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"log"
 	"net/http"
 	"strconv"
 	"strings"
@@ -30,7 +31,8 @@ func GetChatsWhereUserIsSender(w http.ResponseWriter, r *http.Request) {
 
 	items, err := listChatsByRole(db, "sender", user.ID)
 	if err != nil {
-		http.Error(w, "db error: "+err.Error(), http.StatusInternalServerError)
+		log.Println("db error: " + err.Error())
+		http.Error(w, "internal error: getting chats with user's responses", http.StatusInternalServerError)
 		return
 	}
 
@@ -44,7 +46,8 @@ func GetChatsWhereUserIsOwner(w http.ResponseWriter, r *http.Request) {
 
 	items, err := listChatsByRole(db, "owner", user.ID)
 	if err != nil {
-		http.Error(w, "db error: "+err.Error(), http.StatusInternalServerError)
+		log.Println("db error: " + err.Error())
+		http.Error(w, "internal error: getting chats with responses to users", http.StatusInternalServerError)
 		return
 	}
 

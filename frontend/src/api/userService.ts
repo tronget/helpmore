@@ -41,11 +41,6 @@ export interface UserBanRequest {
   bannedTill: string | null;
 }
 
-export interface UserUpdateRateRequest {
-  userId: number;
-  newMark: number;
-}
-
 export type ReportType = 'spam' | 'fraud' | 'insult' | 'illegal' | 'other';
 
 export interface ReportCreateRequest {
@@ -163,13 +158,6 @@ export const deleteUser = async (token: string, userId: number) =>
   requestJson<void>(`${USER_SERVICE_BASE_URL}/users/${userId}`, {
     method: 'DELETE',
     headers: withAuth(token),
-  });
-
-export const updateUserRate = async (token: string, payload: UserUpdateRateRequest) =>
-  requestJson<void>(`${USER_SERVICE_BASE_URL}/users/rate`, {
-    method: 'POST',
-    headers: withAuth(token),
-    body: payload,
   });
 
 export const findUserByEmail = async (token: string, email: string) => {

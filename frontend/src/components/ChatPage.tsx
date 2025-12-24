@@ -1,15 +1,21 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { CheckCircle2, MessageCircle, X } from 'lucide-react';
+import { CheckCircle2, Send, X } from 'lucide-react';
+import {
+  getChatsWhereUserIsOwner,
+  getChatsWhereUserIsSender,
+  getMessages,
+  makeCommWebSocket,
+  sendMessage,
+  type ChatSummary,
+  type MessageDto,
+} from '../api/communicationService';
 import {
   createFeedback,
   deleteResponse,
   getService,
-  getUserResponses,
-  type ResponseDto,
   type ServiceDto,
 } from '../api/marketplaceService';
-import { updateUserRate } from '../api/userService';
 import { useAuthStore } from '../store/authStore';
 import { useUsersById } from '../hooks/useUsersById';
 import { AvatarPlaceholder } from './AvatarPlaceholder';
@@ -19,22 +25,19 @@ interface ChatPageProps {
   selectedChatId: string | null;
 }
 
-interface ChatItem {
-  id: number;
-  responseId: number;
-  serviceId: number;
-  serviceTitle: string;
-  ownerId: number;
-  senderId: number;
+type ChatTab = 'sent' | 'owned';
+
+interface ChatItem extends ChatSummary {
   counterpartId: number;
-  createdAt: string;
 }
 
 export function ChatPage({ selectedChatId }: ChatPageProps) {
   const navigate = useNavigate();
   const { token, user } = useAuthStore();
   const { t, dateLocale } = useI18n();
-  const [responses, setResponses] = useState<ResponseDto[]>([]);
+  const [tab, setTab] = useState<ChatTab>('sent');
+  const [sentChats, setSentChats] = useState<ChatItem[]>([]);
+  const [ownedChats, setOwnedChats] = useState<ChatItem[]>([]);
   const [servicesById, setServicesById] = useState<Record<number, ServiceDto>>({});
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -43,6 +46,11 @@ export function ChatPage({ selectedChatId }: ChatPageProps) {
   const [rating, setRating] = useState<number | null>(null);
   const [review, setReview] = useState('');
   const [isCompleting, setIsCompleting] = useState(false);
+  const [messages, setMessages] = useState<MessageDto[]>([]);
+  const [isMessagesLoading, setIsMessagesLoading] = useState(false);
+  const [messageText, setMessageText] = useState('');
+  const [ws, setWs] = useState<WebSocket | null>(null);
+  const currentResponseIdRef = useRef<number | null>(null);
 
   useEffect(() => {
     if (!user?.id) {
@@ -54,19 +62,40 @@ export function ChatPage({ selectedChatId }: ChatPageProps) {
 
     const load = async () => {
       try {
-        const responsePage = await getUserResponses(user.id);
-        const responseList = responsePage.content;
-        const serviceIds = Array.from(new Set(responseList.map((item) => item.serviceId)));
-        const services = await Promise.all(serviceIds.map((id) => getService(id)));
+        const [sentRaw, ownedRaw] = await Promise.all([
+          getChatsWhereUserIsSender(token ?? ''),
+          getChatsWhereUserIsOwner(token ?? ''),
+        ]);
+
+        const sent = Array.isArray(sentRaw) ? sentRaw : [];
+        const owned = Array.isArray(ownedRaw) ? ownedRaw : [];
+        if (!Array.isArray(sentRaw) || !Array.isArray(ownedRaw)) {
+          console.warn('Unexpected chats payload', { sentRaw, ownedRaw });
+        }
+
+        const serviceIds = Array.from(
+          new Set([...sent, ...owned].map((item) => item.service_id)),
+        );
+        const serviceMap: Record<number, ServiceDto> = {};
+        await Promise.all(
+          serviceIds.map(async (id) => {
+            const data = await getService(id);
+            serviceMap[id] = data;
+          }),
+        );
+
         if (!active) {
           return;
         }
-        const map = services.reduce<Record<number, ServiceDto>>((acc, item) => {
-          acc[item.id] = item;
-          return acc;
-        }, {});
-        setServicesById(map);
-        setResponses(responseList);
+
+        const toChatItem = (item: ChatSummary, isOwner: boolean): ChatItem => ({
+          ...item,
+          counterpartId: isOwner ? item.sender_id : item.owner_id,
+        });
+
+        setSentChats(sent.map((item) => toChatItem(item, false)));
+        setOwnedChats(owned.map((item) => toChatItem(item, true)));
+        setServicesById(serviceMap);
         setError(null);
       } catch (err) {
         if (!active) {
@@ -86,38 +115,61 @@ export function ChatPage({ selectedChatId }: ChatPageProps) {
     return () => {
       active = false;
     };
-  }, [user?.id]);
+  }, [user?.id, token]);
+
+  // WebSocket for live updates
+  useEffect(() => {
+    if (!token) {
+      return;
+    }
+    const socket = makeCommWebSocket(token);
+    setWs(socket);
+
+    socket.onmessage = (event) => {
+      try {
+        const parsed = JSON.parse(event.data);
+        if (parsed?.type === 'new_message' && parsed.payload) {
+          const msg = parsed.payload as MessageDto;
+          if (msg.response_id !== currentResponseIdRef.current) {
+            return;
+          }
+          setMessages((prev) => {
+            if (prev.some((item) => item.id === msg.id)) {
+              return prev;
+            }
+            return [...prev, msg];
+          });
+        }
+      } catch (err) {
+        console.error('ws message parse error', err);
+      }
+    };
+
+    return () => {
+      socket.close();
+      setWs(null);
+    };
+  }, [token]);
 
   const chats = useMemo<ChatItem[]>(() => {
-    if (!user) {
-      return [];
-    }
-    return responses
-      .map((response) => {
-        const service = servicesById[response.serviceId];
-        if (!service) {
-          return null;
-        }
-        const counterpartId = response.senderId === user.id ? service.ownerId : response.senderId;
-        return {
-          id: response.id,
-          responseId: response.id,
-          serviceId: response.serviceId,
-          serviceTitle: service.title,
-          ownerId: service.ownerId,
-          senderId: response.senderId,
-          counterpartId,
-          createdAt: response.createdAt,
-        };
-      })
-      .filter((item): item is ChatItem => item !== null);
-  }, [responses, servicesById, user]);
+    const data = tab === 'sent' ? sentChats : ownedChats;
+    return data
+      .map((item) => ({
+        ...item,
+        service_title: servicesById[item.service_id]?.title ?? item.service_title,
+      }))
+      .sort((a, b) => {
+        const timeA = a.last_message_at || a.response_created_at;
+        const timeB = b.last_message_at || b.response_created_at;
+        return new Date(timeB).getTime() - new Date(timeA).getTime();
+      });
+  }, [tab, sentChats, ownedChats, servicesById]);
 
   const counterpartIds = useMemo(() => chats.map((item) => item.counterpartId), [chats]);
   const { users: usersById } = useUsersById(counterpartIds, token);
 
-  const selectedId = selectedChatId ? Number(selectedChatId) : chats[0]?.id ?? null;
-  const currentChat = chats.find((item) => item.id === selectedId) ?? null;
+  const selectedId = selectedChatId ? Number(selectedChatId) : chats[0]?.response_id ?? null;
+  const currentChat = chats.find((item) => item.response_id === selectedId) ?? null;
   const counterpart = currentChat ? usersById[currentChat.counterpartId] : undefined;
   const counterpartName =
     [counterpart?.profile?.surname, counterpart?.profile?.name]
@@ -144,19 +196,19 @@ export function ChatPage({ selectedChatId }: ChatPageProps) {
 
     try {
       if (completionStatus === 'success' && rating) {
-        await createFeedback(currentChat.serviceId, {
+        await createFeedback(currentChat.service_id, {
           senderId: user.id,
           rate: rating,
           review: review.trim() ? review.trim() : null,
         });
-        await updateUserRate(token ?? '', {
-          userId: currentChat.counterpartId,
-          newMark: rating,
-        });
       }
 
-      await deleteResponse(currentChat.serviceId, currentChat.responseId, user.id);
-      setResponses((prev) => prev.filter((item) => item.id !== currentChat.responseId));
+      await deleteResponse(currentChat.service_id, currentChat.response_id, user.id);
+      if (tab === 'sent') {
+        setSentChats((prev) => prev.filter((item) => item.response_id !== currentChat.response_id));
+      } else {
+        setOwnedChats((prev) => prev.filter((item) => item.response_id !== currentChat.response_id));
+      }
       setShowCompleteModal(false);
       resetCompletion();
     } catch (err) {
@@ -167,12 +219,81 @@ export function ChatPage({ selectedChatId }: ChatPageProps) {
     }
   };
 
+  // Load messages when chat changes
+  useEffect(() => {
+    if (!currentChat) {
+      setMessages([]);
+      currentResponseIdRef.current = null;
+      return;
+    }
+
+    currentResponseIdRef.current = currentChat.response_id;
+    let active = true;
+    setIsMessagesLoading(true);
+
+    const loadMessages = async () => {
+      try {
+        const data = await getMessages(token ?? '', currentChat.response_id, { limit: 200 });
+        if (!active) return;
+        setMessages(data);
+      } catch (err) {
+        if (!active) return;
+        const message = err instanceof Error ? err.message : t('Не удалось загрузить сообщения.');
+        setError(message);
+      } finally {
+        if (active) setIsMessagesLoading(false);
+      }
+    };
+
+    loadMessages();
+    return () => {
+      active = false;
+    };
+  }, [currentChat?.response_id]);
+
+  const handleSendMessage = async () => {
+    if (!currentChat || !messageText.trim()) {
+      return;
+    }
+    const text = messageText.trim();
+    setMessageText('');
+    try {
+      const msg = await sendMessage(token ?? '', currentChat.response_id, { text });
+      setMessages((prev) => [...prev, msg]);
+    } catch (err) {
+      const message = err instanceof Error ? err.message : t('Не удалось отправить сообщение.');
+      setError(message);
+    }
+  };
+
   return (
     <div className="pt-[72px] h-screen flex flex-col">
       <div className="flex-1 flex overflow-hidden">
         <div className="w-96 bg-white border-r border-gray-200 flex flex-col">
           <div className="p-4 border-b border-gray-200">
             <h3>{t('Чаты')}</h3>
+            <div className="flex mt-3 gap-2">
+              <button
+                onClick={() => setTab('sent')}
+                className={`flex-1 px-3 py-2 rounded-lg text-sm border ${
+                  tab === 'sent'
+                    ? 'bg-primary text-white border-primary'
+                    : 'bg-white border-gray-200'
+                }`}
+              >
+                {t('Мои отклики')}
+              </button>
+              <button
+                onClick={() => setTab('owned')}
+                className={`flex-1 px-3 py-2 rounded-lg text-sm border ${
+                  tab === 'owned'
+                    ? 'bg-primary text-white border-primary'
+                    : 'bg-white border-gray-200'
+                }`}
+              >
+                {t('Отклики на мои')}
+              </button>
+            </div>
           </div>
 
           <div className="flex-1 overflow-y-auto">
@@ -191,14 +312,18 @@ export function ChatPage({ selectedChatId }: ChatPageProps) {
               const chatAvatar = chatUser?.profile?.avatar
                 ? `data:image/png;base64,${chatUser.profile.avatar}`
                 : null;
-              const time = new Date(chat.createdAt).toLocaleDateString(dateLocale);
+              const tsRaw = chat.last_message_at || chat.response_created_at;
+              const tsDate = tsRaw ? new Date(tsRaw) : null;
+              const time = tsDate && !Number.isNaN(tsDate.getTime())
+                ? tsDate.toLocaleDateString(dateLocale)
+                : '';
 
               return (
                 <button
-                  key={chat.id}
-                  onClick={() => navigate(`/chat/${chat.id}`)}
+                  key={chat.response_id}
+                  onClick={() => navigate(`/chat/${chat.response_id}`)}
                   className={`w-full p-4 flex items-start gap-3 hover:bg-gray-50 transition-colors border-b border-gray-100 ${
-                    selectedId === chat.id ? 'bg-primary-lighter' : ''
+                    selectedId === chat.response_id ? 'bg-primary-lighter' : ''
                   }`}
                 >
                   {chatAvatar ? (
@@ -215,7 +340,9 @@ export function ChatPage({ selectedChatId }: ChatPageProps) {
                       <span className="font-medium text-gray-900 truncate">{chatName}</span>
                       <span className="text-xs text-gray-500 ml-2 flex-shrink-0">{time}</span>
                     </div>
-                    <p className="text-sm text-gray-500 truncate">{chat.serviceTitle}</p>
+                    <p className="text-sm text-gray-500 truncate">
+                      {servicesById[chat.service_id]?.title ?? chat.service_title}
+                    </p>
                   </div>
                 </button>
               );
@@ -239,7 +366,9 @@ export function ChatPage({ selectedChatId }: ChatPageProps) {
                   )}
                   <div>
                     <h4>{counterpartName}</h4>
-                    <p className="text-sm text-gray-600">{currentChat.serviceTitle}</p>
+                    <p className="text-sm text-gray-600">
+                      {servicesById[currentChat.service_id]?.title ?? currentChat.service_title}
+                    </p>
                   </div>
                 </div>
                 <button
@@ -250,8 +379,79 @@ export function ChatPage({ selectedChatId }: ChatPageProps) {
                 </button>
               </div>
 
-              <div className="flex-1 overflow-y-auto p-10 text-center text-gray-500">
-                {t('Обмен сообщениями пока не реализован.')}
+              <div className="flex-1 overflow-y-auto p-6 space-y-4 flex flex-col">
+                {isMessagesLoading && <p className="text-gray-500">{t('Загрузка...')}</p>}
+                {!isMessagesLoading && messages.length === 0 && (
+                  <p className="text-gray-500">{t('Сообщений пока нет.')}</p>
+                )}
+                {messages.map((msg) => {
+                  const isMine = msg.sender_id === user?.id;
+                  const text = msg.text || msg.text === '' ? msg.text : undefined;
+                  return (
+                    <div
+                      key={msg.id}
+                      className={`inline-flex flex-col px-4 py-3 rounded-2xl shadow-sm text-left ${
+                        isMine
+                          ? 'bg-primary text-white self-end items-end'
+                          : 'bg-white border border-gray-200 self-start items-start'
+                      }`}
+                      style={{
+                        maxWidth: '65%',
+                        color: isMine ? '#fff' : undefined,
+                        alignSelf: isMine ? 'flex-end' : 'flex-start',
+                      }}
+                    >
+                      {text ? (
+                        <p
+                          className={`whitespace-pre-wrap break-words ${
+                            isMine ? '' : 'text-gray-900'
+                          }`}
+                          style={isMine ? { color: '#fff' } : undefined}
+                        >
+                          {text}
+                        </p>
+                      ) : null}
+                      {msg.image_base64 ? (
+                        <img
+                          src={`data:image/png;base64,${msg.image_base64}`}
+                          alt="attachment"
+                          className="mt-2 rounded-lg max-h-64 object-contain"
+                        />
+                      ) : null}
+                      <p
+                        className={`text-xs mt-2 ${isMine ? '' : 'text-gray-500'}`}
+                        style={isMine ? { color: 'rgba(255,255,255,0.8)' } : undefined}
+                      >
+                        {new Date(msg.created_at).toLocaleString(dateLocale)}
+                      </p>
+                    </div>
+                  );
+                })}
+              </div>
+
+              <div className="bg-white border-t border-gray-200 p-4">
+                <div className="flex items-center gap-3">
+                  <input
+                    value={messageText}
+                    onChange={(e) => setMessageText(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' && !e.shiftKey) {
+                        e.preventDefault();
+                        handleSendMessage();
+                      }
+                    }}
+                    placeholder={t('Напишите сообщение...')}
+                    className="flex-1 px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary"
+                  />
+                  <button
+                    onClick={handleSendMessage}
+                    className="px-4 py-3 rounded-xl bg-primary text-white hover:bg-primary-light disabled:opacity-60 flex items-center gap-2"
+                    disabled={!messageText.trim()}
+                  >
+                    <Send className="w-4 h-4" />
+                    {t('Отправить')}
+                  </button>
+                </div>
               </div>
             </>
           ) : (

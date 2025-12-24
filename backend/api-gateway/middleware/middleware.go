@@ -14,13 +14,20 @@ import (
 func YandexToken(db *storage.DB) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			auth := r.Header.Get("Authorization")
-			auth = strings.TrimPrefix(auth, "Bearer ")
+			authHeader := strings.TrimSpace(r.Header.Get("Authorization"))
+			queryToken := strings.TrimSpace(r.URL.Query().Get("auth"))
+			auth := strings.TrimPrefix(authHeader, "Bearer ")
 			auth = strings.Trim(auth, "\"")
 			if auth == "" {
-				http.Error(w, "Missing Authorization header", http.StatusUnauthorized)
-				return
+				if queryToken == "" {
+					http.Error(w, "Missing Authorization header and auth query parameter", http.StatusUnauthorized)
+					return
+				}
+				auth = queryToken
 			}
+
+			// ensure downstream services still see the auth token
+			r.Header.Set("Authorization", "Bearer "+auth)
 
 			var userInfo struct {
 				Email string `db:"email"`
