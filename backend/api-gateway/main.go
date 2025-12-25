@@ -31,9 +31,9 @@ func main() {
 	dbLogger := log.New(os.Stdout, "db ", log.LstdFlags|log.Lmicroseconds)
 	db := storage.NewDB(dbx, dbLogger)
 
-	userProxy := http.StripPrefix("/user", proxyURL("http://localhost:8282"))
-	commProxy := http.StripPrefix("/comm", proxyURL("http://localhost:8002"))
-	servProxy := http.StripPrefix("/serv", proxyURL("http://localhost:8181"))
+	userProxy := http.StripPrefix("/user", proxyURL("http://user-service:8282"))
+	commProxy := http.StripPrefix("/comm", proxyURL("http://communication-service:8002"))
+	servProxy := http.StripPrefix("/serv", proxyURL("http://management-service:8181"))
 
 	r := chi.NewRouter()
 	r.Use(middleware.CORS)

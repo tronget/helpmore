@@ -21,6 +21,6 @@ WORKDIR /root/
 # Копируем бинарник из builder
 COPY --from=builder /app/api-gateway .
 
-EXPOSE 8080
+EXPOSE 8000
 
 CMD ["./api-gateway"]

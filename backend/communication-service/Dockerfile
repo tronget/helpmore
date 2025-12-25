@@ -17,6 +17,6 @@ WORKDIR /root/
 
 COPY --from=builder /app/communication-service .
 
-EXPOSE 8080
+EXPOSE 8002
 
 CMD ["./communication-service"]
