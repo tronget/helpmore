@@ -48,6 +48,7 @@ export function ServiceCatalog({ searchQuery, selectedCategory, onNavigateToServ
 
         const response = await searchServices({
           type: 'OFFER',
+          status: 'ACTIVE',
           titleLike: searchQuery || undefined,
           categoryId,
           minPrice: Number.isFinite(minPrice) ? minPrice : undefined,

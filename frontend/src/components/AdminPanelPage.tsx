@@ -249,6 +249,7 @@ export function AdminPanelPage() {
     setActionUserId(userId);
     try {
       const bannedTill = new Date(value).toISOString();
+      await archiveUserServices(userId);
       const updated = await updateUserBan(token, userId, { bannedTill });
       setUsers((prev) => prev.map((item) => (item.id === userId ? normalizeUser(updated) : item)));
     } catch (err) {
@@ -273,6 +274,24 @@ export function AdminPanelPage() {
       setError(message);
     } finally {
       setActionUserId(null);
+    }
+  };
+  const archiveUserServices = async (ownerId: number) => {
+    try {
+      const response = await searchServices({ ownerId, status: 'ACTIVE' }, { size: 200 });
+      const servicesToArchive = response.content;
+      await Promise.all(
+        servicesToArchive.map((service) =>
+          changeServiceStatus(service.id, {
+            requesterId: ownerId,
+            status: 'ARCHIVED',
+          }),
+        ),
+      );
+    } catch (err) {
+      const message =
+        err instanceof Error ? err.message : t('Не удалось обновить статус услуги.');
+      setError(message);
     }
   };
 
@@ -900,6 +919,7 @@ export function AdminPanelPage() {
                             return;
                           }
                           try {
+                            await archiveUserServices(report.reportedUserId);
                             await updateUserBan(token, report.reportedUserId, {
                               bannedTill: new Date(value).toISOString(),
                             });
@@ -924,6 +944,7 @@ export function AdminPanelPage() {
                             return;
                           }
                           try {
+                            await archiveUserServices(report.userId);
                             await updateUserBan(token, report.userId, {
                               bannedTill: new Date(value).toISOString(),
                             });

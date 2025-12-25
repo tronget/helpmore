@@ -9,6 +9,7 @@ import org.moysha.managementservice.domain.category.CategoryEntity;
 import org.moysha.managementservice.domain.service.ServiceEntity;
 import org.moysha.managementservice.domain.service.ServiceStatus;
 import org.moysha.managementservice.domain.user.AppUserEntity;
+import org.moysha.managementservice.domain.user.UserRole;
 import org.moysha.managementservice.exception.BadRequestException;
 import org.moysha.managementservice.exception.NotFoundException;
 import org.moysha.managementservice.repository.AppUserRepository;
@@ -116,10 +117,34 @@ public class ServiceCatalogService {
         ServiceEntity entity = serviceRepository.findById(serviceId)
             .orElseThrow(() -> new NotFoundException("Service not found: " + serviceId));
         if (!Objects.equals(entity.getOwner().getId(), requesterId)) {
-            throw new BadRequestException("Only owner can change status");
+            AppUserEntity requester = appUserRepository.findById(requesterId)
+                .orElseThrow(() -> new NotFoundException("User not found: " + requesterId));
+            if (requester.getRole() != UserRole.admin && requester.getRole() != UserRole.moderator) {
+                throw new BadRequestException("Only owner or moderator/admin can change status");
+            }
         }
         entity.setStatus(status);
         return ServiceMapper.toDto(serviceRepository.save(entity));
+    }
+
+    @Transactional
+    public java.util.List<ServiceDto> changeUserServicesStatus(Long ownerId,
+                                                               ServiceStatus status,
+                                                               Long requesterId) {
+        AppUserEntity requester = appUserRepository.findById(requesterId)
+            .orElseThrow(() -> new NotFoundException("User not found: " + requesterId));
+        if (requester.getRole() != UserRole.admin && requester.getRole() != UserRole.moderator) {
+            throw new BadRequestException("Only moderator/admin can change user services status");
+        }
+        appUserRepository.findById(ownerId)
+            .orElseThrow(() -> new NotFoundException("User not found: " + ownerId));
+        java.util.List<ServiceEntity> services = serviceRepository.findByOwner_Id(ownerId);
+        for (ServiceEntity service : services) {
+            service.setStatus(status);
+        }
+        return serviceRepository.saveAll(services).stream()
+            .map(ServiceMapper::toDto)
+            .toList();
     }
 
     @Transactional(readOnly = true)

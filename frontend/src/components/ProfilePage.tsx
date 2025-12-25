@@ -13,6 +13,7 @@ import {
   type ReportResponse,
 } from '../api/userService';
 import {
+  changeServiceStatus,
   deleteService,
   getService,
   getFavorites,
@@ -229,6 +230,28 @@ export function ProfilePage({ onNavigateToService, onLogout }: ProfilePageProps)
     });
     return Array.from(unique.values());
   }, [archivedResponses, historyServicesById]);
+
+  const historyOrdersCombined = useMemo(() => {
+    const unique = new Map<number, ServiceDto>();
+    archivedOrders.forEach((order) => unique.set(order.id, order));
+    historyOrders.forEach((order) => {
+      if (!unique.has(order.id)) {
+        unique.set(order.id, order);
+      }
+    });
+    return Array.from(unique.values());
+  }, [archivedOrders, historyOrders]);
+
+  const historyOffersCombined = useMemo(() => {
+    const unique = new Map<number, ServiceDto>();
+    archivedOffers.forEach((service) => unique.set(service.id, service));
+    historyOffers.forEach((service) => {
+      if (!unique.has(service.id)) {
+        unique.set(service.id, service);
+      }
+    });
+    return Array.from(unique.values());
+  }, [archivedOffers, historyOffers]);
 
   return (
     <div className="pt-[72px] bg-gray-50 min-h-screen">
@@ -553,9 +576,9 @@ export function ProfilePage({ onNavigateToService, onLogout }: ProfilePageProps)
           <div id="profile-panel-history" role="tabpanel" aria-labelledby="profile-tab-history">
             <div className="mb-8">
               <h3 className="mb-4">{t('Архив заказов')}</h3>
-              {historyOrders.length > 0 ? (
+              {historyOrdersCombined.length > 0 ? (
                 <div className="grid grid-cols-3 gap-6">
-                  {historyOrders.map((order) => (
+                  {historyOrdersCombined.map((order) => (
                     <div
                       key={order.id}
                       className="bg-white rounded-2xl border border-gray-200 overflow-hidden group text-left cursor-default"
@@ -570,6 +593,34 @@ export function ProfilePage({ onNavigateToService, onLogout }: ProfilePageProps)
                           <span className="text-xs text-gray-500">{t('Архив')}</span>
                           <span className="text-primary">{formatPrice(order.price, order.barter)}</span>
                         </div>
+                        {order.status === 'ARCHIVED' && order.ownerId === user?.id && (
+                          <button
+                            type="button"
+                            onClick={async () => {
+                              if (!user) {
+                                return;
+                              }
+                              try {
+                                const updated = await changeServiceStatus(order.id, {
+                                  requesterId: user.id,
+                                  status: 'ACTIVE',
+                                });
+                                setHistoryServicesById((prev) => ({
+                                  ...prev,
+                                  [updated.id]: updated,
+                                }));
+                                await loadData(user.id, token);
+                              } catch (err) {
+                                const message =
+                                  err instanceof Error ? err.message : t('Не удалось обновить статус услуги.');
+                                setError(message);
+                              }
+                            }}
+                            className="mt-4 px-3 py-2 text-sm border border-gray-200 rounded-lg hover:bg-gray-50"
+                          >
+                            {t('Разархивировать')}
+                          </button>
+                        )}
                       </div>
                     </div>
                   ))}
@@ -582,9 +633,9 @@ export function ProfilePage({ onNavigateToService, onLogout }: ProfilePageProps)
             </div>
             <div>
               <h3 className="mb-4">{t('Архив предложений')}</h3>
-              {historyOffers.length > 0 ? (
+              {historyOffersCombined.length > 0 ? (
                 <div className="grid grid-cols-3 gap-6">
-                  {historyOffers.map((service) => (
+                  {historyOffersCombined.map((service) => (
                     <div
                       key={service.id}
                       className="bg-white rounded-2xl border border-gray-200 overflow-hidden group text-left cursor-default"
@@ -599,6 +650,34 @@ export function ProfilePage({ onNavigateToService, onLogout }: ProfilePageProps)
                           <span className="text-xs text-gray-500">{t('Архив')}</span>
                           <span className="text-primary">{formatPrice(service.price, service.barter)}</span>
                         </div>
+                        {service.status === 'ARCHIVED' && service.ownerId === user?.id && (
+                          <button
+                            type="button"
+                            onClick={async () => {
+                              if (!user) {
+                                return;
+                              }
+                              try {
+                                const updated = await changeServiceStatus(service.id, {
+                                  requesterId: user.id,
+                                  status: 'ACTIVE',
+                                });
+                                setHistoryServicesById((prev) => ({
+                                  ...prev,
+                                  [updated.id]: updated,
+                                }));
+                                await loadData(user.id, token);
+                              } catch (err) {
+                                const message =
+                                  err instanceof Error ? err.message : t('Не удалось обновить статус услуги.');
+                                setError(message);
+                              }
+                            }}
+                            className="mt-4 px-3 py-2 text-sm border border-gray-200 rounded-lg hover:bg-gray-50"
+                          >
+                            {t('Разархивировать')}
+                          </button>
+                        )}
                       </div>
                     </div>
                   ))}

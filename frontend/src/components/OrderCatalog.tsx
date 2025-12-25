@@ -48,6 +48,7 @@ export function OrderCatalog({ searchQuery, selectedCategory, onNavigateToOrder,
 
         const response = await searchServices({
           type: 'ORDER',
+          status: 'ACTIVE',
           titleLike: searchQuery || undefined,
           categoryId,
           minPrice: Number.isFinite(minPrice) ? minPrice : undefined,
