@@ -112,6 +112,7 @@ function ProfileRoute() {
   return (
     <ProfilePage
       onNavigateToService={(serviceId) => navigate(`/services/${serviceId}`)}
+      onNavigateToOrder={(orderId) => navigate(`/orders/${orderId}`)}
       onLogout={handleLogout}
     />
   );

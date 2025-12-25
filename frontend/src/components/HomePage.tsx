@@ -52,6 +52,7 @@ export function HomePage({ onNavigateToService, onNavigateToOrder }: HomePagePro
                       handleSearch();
                     }
                   }}
+                  aria-label={t('Поиск услуг и специалистов...')}
                   className="w-full px-6 py-4 rounded-xl border border-gray-300 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
                 />
               </div>
@@ -71,9 +72,13 @@ export function HomePage({ onNavigateToService, onNavigateToOrder }: HomePagePro
       {/* Tabs */}
       <div className="bg-white border-b border-gray-200 sticky top-[72px] z-40">
         <div className="max-w-[1440px] mx-auto px-8">
-          <div className="flex gap-8">
+          <div className="flex gap-8" role="tablist" aria-label={t('Фильтры')}>
             <button
               onClick={() => setActiveTab('services')}
+              role="tab"
+              id="home-tab-services"
+              aria-selected={activeTab === 'services'}
+              aria-controls="home-panel-services"
               className={`py-4 px-6 relative transition-colors flex items-center gap-2 ${
                 activeTab === 'services'
                   ? 'text-primary'
@@ -97,6 +102,10 @@ export function HomePage({ onNavigateToService, onNavigateToOrder }: HomePagePro
             </button>
             <button
               onClick={() => setActiveTab('orders')}
+              role="tab"
+              id="home-tab-orders"
+              aria-selected={activeTab === 'orders'}
+              aria-controls="home-panel-orders"
               className={`py-4 px-6 relative transition-colors flex items-center gap-2 ${
                 activeTab === 'orders'
                   ? 'text-primary'
@@ -147,19 +156,23 @@ export function HomePage({ onNavigateToService, onNavigateToOrder }: HomePagePro
 
         {/* Catalog */}
         {activeTab === 'services' ? (
-          <ServiceCatalog 
-            searchQuery={appliedSearchQuery}
-            selectedCategory={''}
-            onNavigateToService={onNavigateToService}
-            onResetFilters={handleResetFilters}
-          />
+          <div id="home-panel-services" role="tabpanel" aria-labelledby="home-tab-services">
+            <ServiceCatalog
+              searchQuery={appliedSearchQuery}
+              selectedCategory={''}
+              onNavigateToService={onNavigateToService}
+              onResetFilters={handleResetFilters}
+            />
+          </div>
         ) : (
-          <OrderCatalog 
-            searchQuery={appliedSearchQuery}
-            selectedCategory={''}
-            onNavigateToOrder={onNavigateToOrder}
-            onResetFilters={handleResetFilters}
-          />
+          <div id="home-panel-orders" role="tabpanel" aria-labelledby="home-tab-orders">
+            <OrderCatalog
+              searchQuery={appliedSearchQuery}
+              selectedCategory={''}
+              onNavigateToOrder={onNavigateToOrder}
+              onResetFilters={handleResetFilters}
+            />
+          </div>
         )}
       </div>
 

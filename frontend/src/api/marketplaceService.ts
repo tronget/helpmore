@@ -90,6 +90,7 @@ export interface ResponseDto {
   id: number;
   serviceId: number;
   senderId: number;
+  status?: 'ACTIVE' | 'ARCHIVED';
   comment: string | null;
   createdAt: string;
 }
@@ -208,6 +209,11 @@ export const getUserResponses = async (userId: number) =>
     `${MARKETPLACE_API_BASE_URL}/users/${userId}/responses?size=100`,
   );
 
+export const getUserResponsesArchived = async (userId: number) =>
+  requestJson<PageResponse<ResponseDto>>(
+    `${MARKETPLACE_API_BASE_URL}/users/${userId}/responses/archived?size=100`,
+  );
+
 export const deleteResponse = async (
   serviceId: number,
   responseId: number,
@@ -216,6 +222,22 @@ export const deleteResponse = async (
   requestJson<void>(
     `${MARKETPLACE_API_BASE_URL}/services/${serviceId}/responses/${responseId}?requesterId=${requesterId}`,
     { method: 'DELETE' },
+  );
+
+export const archiveResponse = async (
+  serviceId: number,
+  responseId: number,
+  requesterId: number,
+) =>
+  requestJson<ResponseDto>(
+    `${MARKETPLACE_API_BASE_URL}/services/${serviceId}/responses/${responseId}/status`,
+    {
+      method: 'PATCH',
+      body: {
+        requesterId,
+        status: 'ARCHIVED',
+      },
+    },
   );
 
 export const getFavorites = async (userId: number) =>

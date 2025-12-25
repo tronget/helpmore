@@ -16,6 +16,7 @@ import { useAuthStore } from '../store/authStore';
 import { AvatarPlaceholder } from './AvatarPlaceholder';
 import { EditServiceModal } from './EditServiceModal';
 import { ReportUserModal } from './ReportUserModal';
+import { UserProfileModal } from './UserProfileModal';
 import { useI18n } from '../i18n/useI18n';
 
 interface ServicePageProps {
@@ -32,6 +33,7 @@ export function ServicePage({ serviceId, onBack, onNavigateToChat }: ServicePage
   const [error, setError] = useState<string | null>(null);
   const [showEditModal, setShowEditModal] = useState(false);
   const [showReportModal, setShowReportModal] = useState(false);
+  const [profileUserId, setProfileUserId] = useState<number | null>(null);
   const { token, user } = useAuthStore();
   const { t, locale, dateLocale } = useI18n();
 
@@ -251,6 +253,7 @@ export function ServicePage({ serviceId, onBack, onNavigateToChat }: ServicePage
                         }
                       }}
                       className="p-3 rounded-xl border border-gray-200 hover:bg-gray-50 transition-colors"
+                      aria-label={isFavorite ? t('Убрать из избранного') : t('Добавить в избранное')}
                     >
                       <Heart className={`w-6 h-6 ${isFavorite ? 'fill-red-500 text-red-500' : 'text-gray-600'}`} />
                     </button>
@@ -343,16 +346,37 @@ export function ServicePage({ serviceId, onBack, onNavigateToChat }: ServicePage
                 <h3 className="mb-6">{t('Исполнитель')}</h3>
 
                 <div className="flex flex-col items-center text-center mb-6">
-                  {ownerAvatar ? (
-                    <img
-                      src={ownerAvatar}
-                      alt={ownerName}
-                      className="w-24 h-24 rounded-full object-cover mb-4"
-                    />
-                  ) : (
-                    <AvatarPlaceholder className="w-24 h-24 mb-4" iconClassName="w-10 h-10" />
-                  )}
-                  <h4 className="mb-1">{ownerName}</h4>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (service.ownerId) {
+                        setProfileUserId(service.ownerId);
+                      }
+                    }}
+                    className="mb-4"
+                    aria-label={t('Открыть профиль')}
+                  >
+                    {ownerAvatar ? (
+                      <img
+                        src={ownerAvatar}
+                        alt={ownerName}
+                        className="w-24 h-24 rounded-full object-cover"
+                      />
+                    ) : (
+                      <AvatarPlaceholder className="w-24 h-24" iconClassName="w-10 h-10" />
+                    )}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (service.ownerId) {
+                        setProfileUserId(service.ownerId);
+                      }
+                    }}
+                    className="mb-1"
+                  >
+                    {ownerName}
+                  </button>
                   <p className="text-sm text-gray-600 mb-3">{ownerFaculty}</p>
                   <div className="flex items-center gap-1">
                     <Star className="w-4 h-4 fill-yellow-400 text-yellow-400" />
@@ -406,6 +430,13 @@ export function ServicePage({ serviceId, onBack, onNavigateToChat }: ServicePage
           reportedUserId={service.ownerId}
           onClose={() => setShowReportModal(false)}
           onCreated={() => setError(null)}
+        />
+      )}
+      {profileUserId && (
+        <UserProfileModal
+          userId={profileUserId}
+          onClose={() => setProfileUserId(null)}
+          showContacts={false}
         />
       )}
     </div>

@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Mail, Send, Phone, Star, Plus, Heart, LogOut, Flag } from 'lucide-react';
+import { CreateOrderModal } from './CreateOrderModal';
 import { CreateServiceModal } from './CreateServiceModal';
 import { EditProfileModal } from './EditProfileModal';
 import { useAuthStore } from '../store/authStore';
@@ -13,9 +14,12 @@ import {
 } from '../api/userService';
 import {
   deleteService,
+  getService,
   getFavorites,
+  getUserResponsesArchived,
   removeFavorite,
   searchServices,
+  type ResponseDto,
   type ServiceDto,
 } from '../api/marketplaceService';
 import { useUsersById } from '../hooks/useUsersById';
@@ -23,21 +27,29 @@ import { AvatarPlaceholder } from './AvatarPlaceholder';
 import { EditServiceModal } from './EditServiceModal';
 import { BugReportModal } from './BugReportModal';
 import { useI18n } from '../i18n/useI18n';
+import { LoadingIndicator } from './LoadingIndicator';
 
 interface ProfilePageProps {
   onNavigateToService: (serviceId: string) => void;
+  onNavigateToOrder: (orderId: string) => void;
   onLogout: () => void;
 }
 
 export function ProfilePage({ onNavigateToService, onLogout }: ProfilePageProps) {
   const { user, token, setUser } = useAuthStore();
   const { t, locale, dateLocale } = useI18n();
-  const [activeTab, setActiveTab] = useState<'services' | 'favorites' | 'reports' | 'bugs'>('services');
+  const [activeTab, setActiveTab] = useState<'offers' | 'orders' | 'history' | 'favorites' | 'reports' | 'bugs'>('offers');
   const [showCreateServiceModal, setShowCreateServiceModal] = useState(false);
+  const [showCreateOrderModal, setShowCreateOrderModal] = useState(false);
   const [showEditProfileModal, setShowEditProfileModal] = useState(false);
   const [editingService, setEditingService] = useState<ServiceDto | null>(null);
   const [showBugReportModal, setShowBugReportModal] = useState(false);
-  const [services, setServices] = useState<ServiceDto[]>([]);
+  const [offers, setOffers] = useState<ServiceDto[]>([]);
+  const [orders, setOrders] = useState<ServiceDto[]>([]);
+  const [archivedOffers, setArchivedOffers] = useState<ServiceDto[]>([]);
+  const [archivedOrders, setArchivedOrders] = useState<ServiceDto[]>([]);
+  const [archivedResponses, setArchivedResponses] = useState<ResponseDto[]>([]);
+  const [historyServicesById, setHistoryServicesById] = useState<Record<number, ServiceDto>>({});
   const [favorites, setFavorites] = useState<ServiceDto[]>([]);
   const [reports, setReports] = useState<ReportResponse[]>([]);
   const [bugReports, setBugReports] = useState<BugReportResponse[]>([]);
@@ -75,13 +87,39 @@ export function ProfilePage({ onNavigateToService, onLogout }: ProfilePageProps)
   }, [setUser, token, user?.id]);
 
   const loadData = async (userId: number, authToken: string) => {
-    const [myServices, favoritesResponse, myReports, myBugReports] = await Promise.all([
-      searchServices({ ownerId: userId, type: 'OFFER' }),
+    const [
+      myOffers,
+      myOrders,
+      myArchivedOffers,
+      myArchivedOrders,
+      archivedResponsesData,
+      favoritesResponse,
+      myReports,
+      myBugReports,
+    ] = await Promise.all([
+        searchServices({ ownerId: userId, type: 'OFFER', status: 'ACTIVE' }),
+        searchServices({ ownerId: userId, type: 'ORDER', status: 'ACTIVE' }),
+        searchServices({ ownerId: userId, type: 'OFFER', status: 'ARCHIVED' }),
+        searchServices({ ownerId: userId, type: 'ORDER', status: 'ARCHIVED' }),
+        getUserResponsesArchived(userId),
       getFavorites(userId),
       getMyReports(authToken),
       getMyBugReports(authToken),
-    ]);
-    setServices(myServices.content);
+      ]);
+    setOffers(myOffers.content);
+    setOrders(myOrders.content);
+    setArchivedOffers(myArchivedOffers.content);
+    setArchivedOrders(myArchivedOrders.content);
+    setArchivedResponses(archivedResponsesData.content);
+    const historyServiceIds = Array.from(
+      new Set(archivedResponsesData.content.map((response) => response.serviceId)),
+    );
+    const historyServices = await Promise.all(
+      historyServiceIds.map(async (serviceId) => getService(serviceId)),
+    );
+    setHistoryServicesById(
+      Object.fromEntries(historyServices.map((service) => [service.id, service])),
+    );
     setFavorites(favoritesResponse.content.map((item) => item.service));
     setReports(myReports);
     setBugReports(myBugReports);
@@ -170,6 +208,28 @@ export function ProfilePage({ onNavigateToService, onLogout }: ProfilePageProps)
     }
   };
 
+  const historyOrders = useMemo(() => {
+    const unique = new Map<number, ServiceDto>();
+    archivedResponses.forEach((response) => {
+      const service = historyServicesById[response.serviceId];
+      if (service && service.type === 'ORDER' && !unique.has(service.id)) {
+        unique.set(service.id, service);
+      }
+    });
+    return Array.from(unique.values());
+  }, [archivedResponses, historyServicesById]);
+
+  const historyOffers = useMemo(() => {
+    const unique = new Map<number, ServiceDto>();
+    archivedResponses.forEach((response) => {
+      const service = historyServicesById[response.serviceId];
+      if (service && service.type === 'OFFER' && !unique.has(service.id)) {
+        unique.set(service.id, service);
+      }
+    });
+    return Array.from(unique.values());
+  }, [archivedResponses, historyServicesById]);
+
   return (
     <div className="pt-[72px] bg-gray-50 min-h-screen">
       <div className="max-w-[1200px] mx-auto px-8 py-8">
@@ -201,7 +261,10 @@ export function ProfilePage({ onNavigateToService, onLogout }: ProfilePageProps)
                       <span>{user?.profile?.rate ?? '—'}</span>
                     </div>
                     <div className="text-gray-600">
-                      <span className="font-medium text-gray-900">{services.length}</span> {t('услуг')}
+                      <span className="font-medium text-gray-900">{offers.length}</span> {t('предложений')}
+                    </div>
+                    <div className="text-gray-600">
+                      <span className="font-medium text-gray-900">{orders.length}</span> {t('заказов')}
                     </div>
                   </div>
                 </div>
@@ -248,19 +311,55 @@ export function ProfilePage({ onNavigateToService, onLogout }: ProfilePageProps)
         </div>
 
         {/* Tabs */}
-        <div className="flex gap-4 mb-6">
+        <div className="flex gap-4 mb-6" role="tablist" aria-label={t('Профиль')}>
           <button
-            onClick={() => setActiveTab('services')}
+            onClick={() => setActiveTab('offers')}
+            role="tab"
+            id="profile-tab-offers"
+            aria-selected={activeTab === 'offers'}
+            aria-controls="profile-panel-offers"
             className={`px-6 py-3 rounded-xl transition-colors ${
-              activeTab === 'services'
+              activeTab === 'offers'
                 ? 'bg-primary text-white'
                 : 'bg-white text-gray-600 hover:bg-gray-50 border border-gray-200'
             }`}
           >
-            {t('Мои услуги')}
+            {t('Мои предложения')}
+          </button>
+          <button
+            onClick={() => setActiveTab('orders')}
+            role="tab"
+            id="profile-tab-orders"
+            aria-selected={activeTab === 'orders'}
+            aria-controls="profile-panel-orders"
+            className={`px-6 py-3 rounded-xl transition-colors ${
+              activeTab === 'orders'
+                ? 'bg-primary text-white'
+                : 'bg-white text-gray-600 hover:bg-gray-50 border border-gray-200'
+            }`}
+          >
+            {t('Мои заказы')}
+          </button>
+          <button
+            onClick={() => setActiveTab('history')}
+            role="tab"
+            id="profile-tab-history"
+            aria-selected={activeTab === 'history'}
+            aria-controls="profile-panel-history"
+            className={`px-6 py-3 rounded-xl transition-colors ${
+              activeTab === 'history'
+                ? 'bg-primary text-white'
+                : 'bg-white text-gray-600 hover:bg-gray-50 border border-gray-200'
+            }`}
+          >
+            {t('История')}
           </button>
           <button
             onClick={() => setActiveTab('favorites')}
+            role="tab"
+            id="profile-tab-favorites"
+            aria-selected={activeTab === 'favorites'}
+            aria-controls="profile-panel-favorites"
             className={`px-6 py-3 rounded-xl transition-colors flex items-center gap-2 ${
               activeTab === 'favorites'
                 ? 'bg-primary text-white'
@@ -272,6 +371,10 @@ export function ProfilePage({ onNavigateToService, onLogout }: ProfilePageProps)
           </button>
           <button
             onClick={() => setActiveTab('reports')}
+            role="tab"
+            id="profile-tab-reports"
+            aria-selected={activeTab === 'reports'}
+            aria-controls="profile-panel-reports"
             className={`px-6 py-3 rounded-xl transition-colors flex items-center gap-2 ${
               activeTab === 'reports'
                 ? 'bg-primary text-white'
@@ -283,6 +386,10 @@ export function ProfilePage({ onNavigateToService, onLogout }: ProfilePageProps)
           </button>
           <button
             onClick={() => setActiveTab('bugs')}
+            role="tab"
+            id="profile-tab-bugs"
+            aria-selected={activeTab === 'bugs'}
+            aria-controls="profile-panel-bugs"
             className={`px-6 py-3 rounded-xl transition-colors flex items-center gap-2 ${
               activeTab === 'bugs'
                 ? 'bg-primary text-white'
@@ -297,23 +404,36 @@ export function ProfilePage({ onNavigateToService, onLogout }: ProfilePageProps)
         {error && <p className="text-sm text-red-500 mb-6">{error}</p>}
 
         {/* Content */}
-        {activeTab === 'services' && (
-          <div>
+        {activeTab === 'offers' && (
+          <div id="profile-panel-offers" role="tabpanel" aria-labelledby="profile-tab-offers">
             {/* Add Service Button */}
             <button
               onClick={() => setShowCreateServiceModal(true)}
               className="w-full bg-white rounded-2xl p-8 border-2 border-dashed border-gray-300 hover:border-primary hover:bg-primary-lighter transition-all mb-6 flex items-center justify-center gap-3 text-gray-600 hover:text-primary"
             >
               <Plus className="w-6 h-6" />
-              <span>{t('Добавить новую услугу')}</span>
+              <span>{t('Добавить новое предложение')}</span>
             </button>
+            {isLoading && (
+              <div className="flex justify-center py-12">
+                <LoadingIndicator label={t('Загружаем услуги...')} />
+              </div>
+            )}
 
             {/* Services Grid */}
             <div className="grid grid-cols-3 gap-6">
-              {services.map((service) => (
-                <button
+              {offers.map((service) => (
+                <div
                   key={service.id}
+                  role="button"
+                  tabIndex={0}
                   onClick={() => onNavigateToService(String(service.id))}
+                  onKeyDown={(event) => {
+                    if (event.key === 'Enter' || event.key === ' ') {
+                      event.preventDefault();
+                      onNavigateToService(String(service.id));
+                    }
+                  }}
                   className="bg-white rounded-2xl border border-gray-200 overflow-hidden hover:shadow-lg transition-all group text-left"
                 >
                   <div className="p-5">
@@ -364,19 +484,141 @@ export function ProfilePage({ onNavigateToService, onLogout }: ProfilePageProps)
                       </button>
                     </div>
                   </div>
-                </button>
+                </div>
               ))}
             </div>
-            {!isLoading && services.length === 0 && (
+            {!isLoading && offers.length === 0 && (
               <div className="text-center py-16">
-                <p className="text-gray-500">{t('У вас пока нет услуг')}</p>
+                <p className="text-gray-500">{t('У вас пока нет предложений')}</p>
               </div>
             )}
           </div>
         )}
 
+        {activeTab === 'orders' && (
+          <div id="profile-panel-orders" role="tabpanel" aria-labelledby="profile-tab-orders">
+            <button
+              onClick={() => setShowCreateOrderModal(true)}
+              className="w-full bg-white rounded-2xl p-8 border-2 border-dashed border-gray-300 hover:border-primary hover:bg-primary-lighter transition-all mb-6 flex items-center justify-center gap-3 text-gray-600 hover:text-primary"
+            >
+              <Plus className="w-6 h-6" />
+              <span>{t('Добавить новый заказ')}</span>
+            </button>
+            {isLoading && (
+              <div className="flex justify-center py-12">
+                <LoadingIndicator label={t('Загружаем заказы...')} />
+              </div>
+            )}
+            <div className="grid grid-cols-3 gap-6">
+              {orders.map((order) => (
+                <div
+                  key={order.id}
+                  role="button"
+                  tabIndex={0}
+                  onClick={() => onNavigateToOrder(String(order.id))}
+                  onKeyDown={(event) => {
+                    if (event.key === 'Enter' || event.key === ' ') {
+                      event.preventDefault();
+                      onNavigateToOrder(String(order.id));
+                    }
+                  }}
+                  className="bg-white rounded-2xl border border-gray-200 overflow-hidden hover:shadow-lg transition-all group text-left"
+                >
+                  <div className="p-5">
+                    <div className="inline-block px-3 py-1 bg-primary-lighter text-primary rounded-lg text-sm mb-3">
+                      {order.categoryName}
+                    </div>
+                    <h4 className="mb-2 line-clamp-2">{order.title}</h4>
+                    <p className="text-sm text-gray-600 mb-4 line-clamp-2">{order.description}</p>
+                    <div className="flex items-center justify-between pt-4 border-t border-gray-100">
+                      <div className="flex items-center gap-1">
+                        <Star className="w-4 h-4 fill-yellow-400 text-yellow-400" />
+                        <span className="text-sm">{user?.profile?.rate ?? '—'}</span>
+                      </div>
+                      <span className="text-primary">{formatPrice(order.price, order.barter)}</span>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+            {!isLoading && orders.length === 0 && (
+              <div className="text-center py-16">
+                <p className="text-gray-500">{t('У вас пока нет заказов')}</p>
+              </div>
+            )}
+          </div>
+        )}
+
+        {activeTab === 'history' && (
+          <div id="profile-panel-history" role="tabpanel" aria-labelledby="profile-tab-history">
+            <div className="mb-8">
+              <h3 className="mb-4">{t('Архив заказов')}</h3>
+              {historyOrders.length > 0 ? (
+                <div className="grid grid-cols-3 gap-6">
+                  {historyOrders.map((order) => (
+                    <div
+                      key={order.id}
+                      className="bg-white rounded-2xl border border-gray-200 overflow-hidden group text-left cursor-default"
+                    >
+                      <div className="p-5">
+                        <div className="inline-block px-3 py-1 bg-gray-100 text-gray-700 rounded-lg text-sm mb-3">
+                          {order.categoryName}
+                        </div>
+                        <h4 className="mb-2 line-clamp-2">{order.title}</h4>
+                        <p className="text-sm text-gray-600 mb-4 line-clamp-2">{order.description}</p>
+                        <div className="flex items-center justify-between pt-4 border-t border-gray-100">
+                          <span className="text-xs text-gray-500">{t('Архив')}</span>
+                          <span className="text-primary">{formatPrice(order.price, order.barter)}</span>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center py-12">
+                  <p className="text-gray-500">{t('Архивных заказов нет')}</p>
+                </div>
+              )}
+            </div>
+            <div>
+              <h3 className="mb-4">{t('Архив предложений')}</h3>
+              {historyOffers.length > 0 ? (
+                <div className="grid grid-cols-3 gap-6">
+                  {historyOffers.map((service) => (
+                    <div
+                      key={service.id}
+                      className="bg-white rounded-2xl border border-gray-200 overflow-hidden group text-left cursor-default"
+                    >
+                      <div className="p-5">
+                        <div className="inline-block px-3 py-1 bg-gray-100 text-gray-700 rounded-lg text-sm mb-3">
+                          {service.categoryName}
+                        </div>
+                        <h4 className="mb-2 line-clamp-2">{service.title}</h4>
+                        <p className="text-sm text-gray-600 mb-4 line-clamp-2">{service.description}</p>
+                        <div className="flex items-center justify-between pt-4 border-t border-gray-100">
+                          <span className="text-xs text-gray-500">{t('Архив')}</span>
+                          <span className="text-primary">{formatPrice(service.price, service.barter)}</span>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center py-12">
+                  <p className="text-gray-500">{t('Архивных предложений нет')}</p>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
         {activeTab === 'favorites' && (
-          <div>
+          <div id="profile-panel-favorites" role="tabpanel" aria-labelledby="profile-tab-favorites">
+            {isLoading && (
+              <div className="flex justify-center py-12">
+                <LoadingIndicator label={t('Загружаем услуги...')} />
+              </div>
+            )}
             {favorites.length > 0 ? (
               <div className="grid grid-cols-3 gap-6">
                 {favorites.map((service) => {
@@ -412,6 +654,7 @@ export function ProfilePage({ onNavigateToService, onLogout }: ProfilePageProps)
                           }
                         }}
                         className="absolute top-4 right-4 z-10 p-2 bg-white rounded-full shadow-lg"
+                        aria-label={t('Убрать из избранного')}
                       >
                         <Heart className="w-5 h-5 fill-red-500 text-red-500" />
                       </button>
@@ -456,7 +699,12 @@ export function ProfilePage({ onNavigateToService, onLogout }: ProfilePageProps)
         )}
 
         {activeTab === 'reports' && (
-          <div className="bg-white rounded-2xl border border-gray-200">
+          <div
+            id="profile-panel-reports"
+            role="tabpanel"
+            aria-labelledby="profile-tab-reports"
+            className="bg-white rounded-2xl border border-gray-200"
+          >
             <div className="p-6 border-b border-gray-100">
               <h3>{t('Мои жалобы')}</h3>
               <p className="text-sm text-gray-500 mt-1">{t('Всего: {count}', { count: reports.length })}</p>
@@ -495,7 +743,12 @@ export function ProfilePage({ onNavigateToService, onLogout }: ProfilePageProps)
         )}
 
         {activeTab === 'bugs' && (
-          <div className="bg-white rounded-2xl border border-gray-200">
+          <div
+            id="profile-panel-bugs"
+            role="tabpanel"
+            aria-labelledby="profile-tab-bugs"
+            className="bg-white rounded-2xl border border-gray-200"
+          >
             <div className="p-6 border-b border-gray-100 flex items-center justify-between">
               <div>
                 <h3>{t('Мои баг-репорты')}</h3>
@@ -557,6 +810,9 @@ export function ProfilePage({ onNavigateToService, onLogout }: ProfilePageProps)
       {/* Modals */}
       {showCreateServiceModal && (
         <CreateServiceModal onClose={() => setShowCreateServiceModal(false)} />
+      )}
+      {showCreateOrderModal && (
+        <CreateOrderModal onClose={() => setShowCreateOrderModal(false)} />
       )}
       {showEditProfileModal && (
         <EditProfileModal onClose={() => setShowEditProfileModal(false)} />

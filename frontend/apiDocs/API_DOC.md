@@ -2,10 +2,6 @@
 
 Документ описывает все публичные REST-эндпоинты сервиса, формат запросов/ответов и ключевые валидации. Базовый префикс всех путей — `/api`. Все тела передаются и возвращаются в JSON. Времена (`createdAt`, `timestamp`) сериализуются как ISO-8601 UTC строки (например, `2025-05-01T12:00:00Z`).
 
-## Порт и базовый URL для фронтенда
-По умолчанию Spring Boot стартует на `http://localhost:8181`.
-
-
 ## Формат ошибок
 - Код ответа: `400` — ошибка валидации/логики, `404` — не найдено, `409` — конфликт, `500` — внутренняя ошибка.
 - Тело:
@@ -24,24 +20,22 @@
 ## Справочники
 - `ServiceType`: `OFFER`, `ORDER`.
 - `ServiceStatus`: `ACTIVE`, `ARCHIVED`.
+- `ResponseStatus`: `ACTIVE`, `ARCHIVED`.
 - Оценка сервиса: `rate` от `1` до `5`.
 
 ## Категории
 **DTO:** `CategoryDto { id, name }`  
-**Запрос:** `CategoryRequest { name }` (`name` обязательное, ≤255 символов).
+**Запрос:** `CategoryRequest { name }` (`name` обязательное, не пустое, ≤255 символов).
 
 - `GET /api/categories` — список категорий.  
   - Ответ: `CategoryDto[]`.
 - `POST /api/categories` — создать категорию.  
   - Тело: `CategoryRequest`.  
-  - Доступ: только админы и модераторы.
   - Ошибки: `409`, если имя уже существует.
 - `PUT /api/categories/{id}` — переименовать.  
   - Тело: `CategoryRequest`.  
-  - Доступ: только админы и модераторы.
   - Ошибки: `404`, если не найдено; `409`, если новое имя занято.
 - `DELETE /api/categories/{id}` — удалить категорию.  
-  - Доступ: только админы и модераторы.
   - Ошибки: `404`, если не найдено.
 
 ## Сервисы
@@ -49,7 +43,7 @@
 `type` — `ServiceType`, `status` — `ServiceStatus`, `price` — decimal, `barter` — `true/false`, `place` опционально (≤255).
 
 - `POST /api/services` — создать сервис.  
-  - Тело: `CreateServiceRequest { ownerId, categoryId, title (≤255), description (≤5000), type, price ≥0, barter, place? }`.  
+  - Тело: `CreateServiceRequest { ownerId, categoryId, title (обяз., не пустой, ≤255), description (обяз., не пустое, ≤5000), type, price ≥0, barter, place? }`.  
   - Ошибки: `404`, если `ownerId` или `categoryId` не найдены.
   - Ответ: `ServiceDto` со статусом `ACTIVE`.
 - `PUT /api/services/{serviceId}` — частичное обновление полей.  
@@ -71,28 +65,44 @@
   - Ответ: обновленный `ServiceDto`.
 
 ## Отклики на сервис (responses)
-**DTO:** `ResponseDto { id, serviceId, senderId, comment, createdAt }`  
-Комментарий (`comment`, ≤1000) пока не передается в запросах и всегда `null`.
+**DTO:** `ResponseDto { id, serviceId, senderId, status, createdAt }`  
+`status` — `ResponseStatus`.
 
 - `GET /api/services/{serviceId}/responses` — список откликов на сервис (Page).  
+  - Параметры пагинации `page/size/sort`.  
+  - Ответ: `Page<ResponseDto>`.
+- `GET /api/services/{serviceId}/responses/active` — только активные отклики (Page).  
+  - Параметры пагинации `page/size/sort`.  
+  - Ответ: `Page<ResponseDto>`.
+- `GET /api/services/{serviceId}/responses/archived` — только архивные отклики (Page).  
   - Параметры пагинации `page/size/sort`.  
   - Ответ: `Page<ResponseDto>`.
 - `GET /api/users/{userId}/responses` — все отклики, где пользователь выступает автором отклика или владельцем сервиса (Page).  
   - Параметры пагинации `page/size/sort`.  
   - Ответ: `Page<ResponseDto>`.
+- `GET /api/users/{userId}/responses/active` — только активные отклики пользователя (Page).  
+  - Параметры пагинации `page/size/sort`.  
+  - Ответ: `Page<ResponseDto>`.
+- `GET /api/users/{userId}/responses/archived` — только архивные отклики пользователя (Page).  
+  - Параметры пагинации `page/size/sort`.  
+  - Ответ: `Page<ResponseDto>`.
 - `POST /api/services/{serviceId}/responses` — откликнуться на сервис.  
-  - Тело: `CreateResponseRequest { senderId }`.  
+  - Тело: `CreateResponseRequest { senderId }` (`senderId` обязательное).  
   - Ошибки: `400`, если владелец откликается сам; `404`, если сервис или пользователь не найден; `409`, если отклик от этого пользователя уже есть.  
-  - Ответ: созданный `ResponseDto` (без комментария).
+  - Ответ: созданный `ResponseDto`.
+- `PATCH /api/services/{serviceId}/responses/{responseId}/status` — архивировать отклик.  
+  - Тело: `ChangeResponseStatusRequest { requesterId, status }` (`status` должен быть `ARCHIVED`).  
+  - Ошибки: `400`, если нет прав, статус не `ARCHIVED` или отклик уже архивирован; `404`, если отклик не найден.  
+  - Ответ: обновленный `ResponseDto`.
 - `DELETE /api/services/{serviceId}/responses/{responseId}?requesterId=...` — удалить отклик.  
-  - Разрешено автору отклика или владельцу сервиса.  
-  - Ошибки: `400`, если нет прав; `404`, если отклик не найден.
+  - Разрешено автору отклика или владельцу сервиса, только если отклик в статусе `ACTIVE`.  
+  - Ошибки: `400`, если нет прав или статус не `ACTIVE`; `404`, если отклик не найден.
 
 ## Отзывы о сервисе (feedback)
 **DTO:** `FeedbackDto { id, serviceId, senderId, rate, review, createdAt }` (`review` ≤5000).  
 **Запросы:**  
-- `CreateFeedbackRequest { senderId, rate 1..5, review? }`  
-- `UpdateFeedbackRequest { senderId, rate 1..5, review? }`
+- `CreateFeedbackRequest { senderId, rate 1..5 (обяз.), review? }`  
+- `UpdateFeedbackRequest { senderId, rate 1..5 (обяз.), review? }`
 
 - `GET /api/services/{serviceId}/feedback` — список отзывов (Page).  
   - Параметры пагинации `page/size/sort`.  

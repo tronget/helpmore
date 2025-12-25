@@ -211,6 +211,7 @@ export function LoginPage({ onLogin }: LoginPageProps) {
                   value={manualToken}
                   onChange={(event) => setManualToken(event.target.value)}
                   rows={3}
+                  aria-label={t('Вставьте access_token')}
                   className="w-full border border-gray-300 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-primary text-sm resize-none bg-white"
                   placeholder="ya29.a0ARrdaM..."
                 />

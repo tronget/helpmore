@@ -10,6 +10,8 @@ public interface FeedbackRepository extends JpaRepository<FeedbackEntity, Long> 
 
     boolean existsBySender_IdAndService_Id(Long senderId, Long serviceId);
 
+    Optional<FeedbackEntity> findBySender_IdAndService_Id(Long senderId, Long serviceId);
+
     Page<FeedbackEntity> findByService_Id(Long serviceId, Pageable pageable);
 
     Optional<FeedbackEntity> findByIdAndSender_Id(Long id, Long senderId);

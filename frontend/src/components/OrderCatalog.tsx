@@ -5,6 +5,7 @@ import { useUsersById } from '../hooks/useUsersById';
 import { searchServices, type ServiceDto } from '../api/marketplaceService';
 import { useAuthStore } from '../store/authStore';
 import { AvatarPlaceholder } from './AvatarPlaceholder';
+import { LoadingIndicator } from './LoadingIndicator';
 import { useI18n } from '../i18n/useI18n';
 
 interface OrderCatalogProps {
@@ -126,6 +127,7 @@ export function OrderCatalog({ searchQuery, selectedCategory, onNavigateToOrder,
             <select
               value={selectedCategoryFilter}
               onChange={(e) => setSelectedCategoryFilter(e.target.value)}
+              aria-label={t('Категория')}
               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
             >
               <option value="all">{t('Все категории')}</option>
@@ -146,6 +148,7 @@ export function OrderCatalog({ searchQuery, selectedCategory, onNavigateToOrder,
                 value={minPriceFilter}
                 onChange={(event) => setMinPriceFilter(event.target.value)}
                 placeholder={t('Мин')}
+                aria-label={t('Мин цена')}
                 className="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
               />
               <input
@@ -153,6 +156,7 @@ export function OrderCatalog({ searchQuery, selectedCategory, onNavigateToOrder,
                 value={maxPriceFilter}
                 onChange={(event) => setMaxPriceFilter(event.target.value)}
                 placeholder={t('Макс')}
+                aria-label={t('Макс цена')}
                 className="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
               />
             </div>
@@ -165,6 +169,7 @@ export function OrderCatalog({ searchQuery, selectedCategory, onNavigateToOrder,
                 type="checkbox"
                 checked={barterOnly}
                 onChange={(event) => setBarterOnly(event.target.checked)}
+                aria-label={t('Только бартер')}
               />
               {t('Только бартер')}
             </label>
@@ -192,11 +197,19 @@ export function OrderCatalog({ searchQuery, selectedCategory, onNavigateToOrder,
           <p className="text-gray-600">{t('Найдено заказов: {count}', { count: orderCards.length })}</p>
         </div>
         
-        <div className="grid grid-cols-3 gap-6">
+        <div className="grid grid-cols-3 gap-6" aria-busy={isLoading}>
           {orderCards.map((order) => (
-            <button
+            <div
               key={order.id}
+              role="button"
+              tabIndex={0}
               onClick={() => onNavigateToOrder(String(order.id))}
+              onKeyDown={(event) => {
+                if (event.key === 'Enter' || event.key === ' ') {
+                  event.preventDefault();
+                  onNavigateToOrder(String(order.id));
+                }
+              }}
               className="bg-white rounded-2xl border border-gray-200 p-6 hover:shadow-lg transition-all cursor-pointer group text-left"
             >
               {/* Header */}
@@ -259,13 +272,13 @@ export function OrderCatalog({ searchQuery, selectedCategory, onNavigateToOrder,
                 </div>
                 <span className="text-primary">{formatPrice(order.price)}</span>
               </div>
-            </button>
+            </div>
           ))}
         </div>
 
         {isLoading && (
-          <div className="text-center py-16">
-            <p className="text-gray-500">{t('Загружаем заказы...')}</p>
+          <div className="flex justify-center py-16">
+            <LoadingIndicator label={t('Загружаем заказы...')} />
           </div>
         )}
 
@@ -281,6 +294,7 @@ export function OrderCatalog({ searchQuery, selectedCategory, onNavigateToOrder,
           </div>
         )}
       </div>
+
     </div>
   );
 }

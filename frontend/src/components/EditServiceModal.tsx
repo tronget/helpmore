@@ -12,6 +12,7 @@ interface EditServiceModalProps {
 }
 
 export function EditServiceModal({ service, onClose, onUpdated }: EditServiceModalProps) {
+  const maxPrice = 1_000_000;
   const { categories } = useCategories();
   const { user } = useAuthStore();
   const { t } = useI18n();
@@ -47,6 +48,10 @@ export function EditServiceModal({ service, onClose, onUpdated }: EditServiceMod
       setError(t('Укажите корректную цену.'));
       return;
     }
+    if (parsedPrice > maxPrice) {
+      setError(t('Сумма должна быть не больше 1 000 000.'));
+      return;
+    }
 
     setIsSubmitting(true);
     setError(null);
@@ -73,12 +78,18 @@ export function EditServiceModal({ service, onClose, onUpdated }: EditServiceMod
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+      <div
+        className="bg-white rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="edit-service-title"
+      >
         <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between">
-          <h3>{t('Редактировать услугу')}</h3>
+          <h3 id="edit-service-title">{t('Редактировать услугу')}</h3>
           <button
             onClick={onClose}
             className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+            aria-label={t('Закрыть')}
           >
             <X className="w-5 h-5" />
           </button>
@@ -92,6 +103,7 @@ export function EditServiceModal({ service, onClose, onUpdated }: EditServiceMod
               required
               value={formData.title}
               onChange={(event) => setFormData({ ...formData, title: event.target.value })}
+              aria-label={t('Название услуги *')}
               className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary"
             />
           </div>
@@ -102,6 +114,7 @@ export function EditServiceModal({ service, onClose, onUpdated }: EditServiceMod
               required
               value={formData.categoryId}
               onChange={(event) => setFormData({ ...formData, categoryId: event.target.value })}
+              aria-label={t('Категория *')}
               className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary"
             >
               <option value="">{t('Выберите категорию')}</option>
@@ -119,6 +132,7 @@ export function EditServiceModal({ service, onClose, onUpdated }: EditServiceMod
               required
               value={formData.description}
               onChange={(event) => setFormData({ ...formData, description: event.target.value })}
+              aria-label={t('Описание *')}
               rows={5}
               className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary resize-none"
             />
@@ -132,6 +146,7 @@ export function EditServiceModal({ service, onClose, onUpdated }: EditServiceMod
                 required
                 value={formData.price}
                 onChange={(event) => setFormData({ ...formData, price: event.target.value })}
+                aria-label={t('Цена *')}
                 className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary"
               />
             </div>
@@ -141,6 +156,7 @@ export function EditServiceModal({ service, onClose, onUpdated }: EditServiceMod
                 type="checkbox"
                 checked={formData.barter}
                 onChange={(event) => setFormData({ ...formData, barter: event.target.checked })}
+                aria-label={t('Бартер')}
                 className="text-primary"
               />
             </div>
@@ -152,6 +168,7 @@ export function EditServiceModal({ service, onClose, onUpdated }: EditServiceMod
               type="text"
               value={formData.place}
               onChange={(event) => setFormData({ ...formData, place: event.target.value })}
+              aria-label={t('Место')}
               className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary"
             />
           </div>

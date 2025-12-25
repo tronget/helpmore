@@ -1,6 +1,7 @@
 package org.moysha.managementservice.api.controller;
 
 import org.moysha.managementservice.api.dto.ResponseDto;
+import org.moysha.managementservice.domain.response.ResponseStatus;
 import org.moysha.managementservice.service.ResponseService;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -23,5 +24,17 @@ public class UserResponseController {
     public Page<ResponseDto> listUserResponses(@PathVariable Long userId, Pageable pageable) {
         System.err.println("GET /api/users/{userId}/responses");
         return responseService.getUserResponses(userId, pageable);
+    }
+
+    @GetMapping("/{userId}/responses/active")
+    public Page<ResponseDto> listUserActiveResponses(@PathVariable Long userId, Pageable pageable) {
+        System.err.println("GET /api/users/{userId}/responses/active");
+        return responseService.getUserResponsesByStatus(userId, ResponseStatus.ACTIVE, pageable);
+    }
+
+    @GetMapping("/{userId}/responses/archived")
+    public Page<ResponseDto> listUserArchivedResponses(@PathVariable Long userId, Pageable pageable) {
+        System.err.println("GET /api/users/{userId}/responses/archived");
+        return responseService.getUserResponsesByStatus(userId, ResponseStatus.ARCHIVED, pageable);
     }
 }

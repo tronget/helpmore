@@ -5,6 +5,7 @@ import { useUsersById } from '../hooks/useUsersById';
 import { useAuthStore } from '../store/authStore';
 import { AvatarPlaceholder } from './AvatarPlaceholder';
 import { ReportUserModal } from './ReportUserModal';
+import { UserProfileModal } from './UserProfileModal';
 import { useI18n } from '../i18n/useI18n';
 
 interface OrderPageProps {
@@ -18,6 +19,7 @@ export function OrderPage({ orderId, onBack, onNavigateToChat }: OrderPageProps)
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [showReportModal, setShowReportModal] = useState(false);
+  const [profileUserId, setProfileUserId] = useState<number | null>(null);
   const { token, user } = useAuthStore();
   const { t, locale, dateLocale } = useI18n();
 
@@ -177,16 +179,37 @@ export function OrderPage({ orderId, onBack, onNavigateToChat }: OrderPageProps)
 
               {/* Author */}
               <div className="flex flex-col items-center text-center mb-6">
-                {ownerAvatar ? (
-                  <img
-                    src={ownerAvatar}
-                    alt={ownerName}
-                    className="w-24 h-24 rounded-full object-cover mb-4"
-                  />
-                ) : (
-                  <AvatarPlaceholder className="w-24 h-24 mb-4" iconClassName="w-10 h-10" />
-                )}
-                <h4 className="mb-1">{ownerName}</h4>
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (order.ownerId) {
+                      setProfileUserId(order.ownerId);
+                    }
+                  }}
+                  className="mb-4"
+                  aria-label={t('Открыть профиль')}
+                >
+                  {ownerAvatar ? (
+                    <img
+                      src={ownerAvatar}
+                      alt={ownerName}
+                      className="w-24 h-24 rounded-full object-cover"
+                    />
+                  ) : (
+                    <AvatarPlaceholder className="w-24 h-24" iconClassName="w-10 h-10" />
+                  )}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (order.ownerId) {
+                      setProfileUserId(order.ownerId);
+                    }
+                  }}
+                  className="mb-1"
+                >
+                  {ownerName}
+                </button>
                 <p className="text-sm text-gray-600 mb-3">{owner?.profile?.faculty ?? t('Студент ИТМО')}</p>
               </div>
 
@@ -243,6 +266,13 @@ export function OrderPage({ orderId, onBack, onNavigateToChat }: OrderPageProps)
         <ReportUserModal
           reportedUserId={order.ownerId}
           onClose={() => setShowReportModal(false)}
+        />
+      )}
+      {profileUserId && (
+        <UserProfileModal
+          userId={profileUserId}
+          onClose={() => setProfileUserId(null)}
+          showContacts={false}
         />
       )}
     </div>

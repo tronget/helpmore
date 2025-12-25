@@ -2,12 +2,15 @@ package org.moysha.managementservice.api.controller;
 
 import jakarta.validation.Valid;
 import org.moysha.managementservice.api.dto.ResponseDto;
+import org.moysha.managementservice.api.request.ChangeResponseStatusRequest;
 import org.moysha.managementservice.api.request.CreateResponseRequest;
+import org.moysha.managementservice.domain.response.ResponseStatus;
 import org.moysha.managementservice.service.ResponseService;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -31,6 +34,18 @@ public class ResponseController {
         return responseService.getResponses(serviceId, pageable);
     }
 
+    @GetMapping("/active")
+    public Page<ResponseDto> listActive(@PathVariable Long serviceId, Pageable pageable) {
+        System.err.println("GET /api/services/{serviceId}/responses/active");
+        return responseService.getResponsesByStatus(serviceId, ResponseStatus.ACTIVE, pageable);
+    }
+
+    @GetMapping("/archived")
+    public Page<ResponseDto> listArchived(@PathVariable Long serviceId, Pageable pageable) {
+        System.err.println("GET /api/services/{serviceId}/responses/archived");
+        return responseService.getResponsesByStatus(serviceId, ResponseStatus.ARCHIVED, pageable);
+    }
+
     @PostMapping
     public ResponseDto respond(@PathVariable Long serviceId,
                                @Valid @RequestBody CreateResponseRequest request) {
@@ -44,5 +59,13 @@ public class ResponseController {
                        @RequestParam Long requesterId) {
         System.err.println("DELETE /api/services/{serviceId}/responses/{responseId}");
         responseService.delete(responseId, requesterId);
+    }
+
+    @PatchMapping("/{responseId}/status")
+    public ResponseDto changeStatus(@PathVariable Long serviceId,
+                                    @PathVariable Long responseId,
+                                    @Valid @RequestBody ChangeResponseStatusRequest request) {
+        System.err.println("PATCH /api/services/{serviceId}/responses/{responseId}/status");
+        return responseService.changeStatus(responseId, request.getStatus(), request.getRequesterId());
     }
 }

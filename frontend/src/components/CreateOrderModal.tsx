@@ -14,6 +14,7 @@ interface CreateOrderModalProps {
 }
 
 export function CreateOrderModal({ onClose }: CreateOrderModalProps) {
+  const maxPrice = 1_000_000;
   const [formData, setFormData] = useState({
     title: '',
     category: '',
@@ -53,6 +54,10 @@ export function CreateOrderModal({ onClose }: CreateOrderModalProps) {
       setError(t('Укажите корректный бюджет.'));
       return;
     }
+    if (parsedPrice > maxPrice) {
+      setError(t('Сумма должна быть не больше 1 000 000.'));
+      return;
+    }
 
     if (!deadlineDate) {
       setError(t('Укажите дату завершения.'));
@@ -84,13 +89,19 @@ export function CreateOrderModal({ onClose }: CreateOrderModalProps) {
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+      <div
+        className="bg-white rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="create-order-title"
+      >
         {/* Header */}
         <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between">
-          <h3>{t('Создать заказ')}</h3>
+          <h3 id="create-order-title">{t('Создать заказ')}</h3>
           <button
             onClick={onClose}
             className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+            aria-label={t('Закрыть')}
           >
             <X className="w-5 h-5" />
           </button>
@@ -107,6 +118,7 @@ export function CreateOrderModal({ onClose }: CreateOrderModalProps) {
               value={formData.title}
               onChange={(e) => setFormData({ ...formData, title: e.target.value })}
               placeholder={t('Например: Нужна помощь с курсовой по базам данных')}
+              aria-label={t('Название заказа *')}
               className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary"
             />
           </div>
@@ -118,6 +130,7 @@ export function CreateOrderModal({ onClose }: CreateOrderModalProps) {
               required
               value={formData.category}
               onChange={(e) => setFormData({ ...formData, category: e.target.value })}
+              aria-label={t('Категория *')}
               className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary"
             >
               <option value="">{t('Выберите категорию')}</option>
@@ -137,6 +150,7 @@ export function CreateOrderModal({ onClose }: CreateOrderModalProps) {
               value={formData.description}
               onChange={(e) => setFormData({ ...formData, description: e.target.value })}
               placeholder={t('Подробно опишите, какая помощь вам нужна...')}
+              aria-label={t('Описание задачи *')}
               rows={5}
               className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary resize-none"
             />
@@ -152,6 +166,7 @@ export function CreateOrderModal({ onClose }: CreateOrderModalProps) {
                 value={formData.budget}
                 onChange={(e) => setFormData({ ...formData, budget: e.target.value })}
                 placeholder="3000₽"
+                aria-label={t('Бюджет *')}
                 className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary"
               />
             </div>
@@ -163,6 +178,7 @@ export function CreateOrderModal({ onClose }: CreateOrderModalProps) {
                     type="button"
                     variant="outline"
                     className="w-full justify-start px-4 py-3 h-[46px] rounded-xl border border-gray-300 flex items-center gap-3"
+                    aria-label={t('Срок выполнения *')}
                   >
                     <CalendarIcon className="w-4 h-4 text-gray-500" />
                     {deadlineDate
@@ -199,6 +215,7 @@ export function CreateOrderModal({ onClose }: CreateOrderModalProps) {
               value={formData.place}
               onChange={(e) => setFormData({ ...formData, place: e.target.value })}
               placeholder={t('Например: Онлайн / Биржевая линия')}
+              aria-label={t('Место *')}
               className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary"
             />
           </div>
@@ -210,6 +227,7 @@ export function CreateOrderModal({ onClose }: CreateOrderModalProps) {
               required
               value={formData.type}
               onChange={(e) => setFormData({ ...formData, type: e.target.value })}
+              aria-label={t('Тип сделки *')}
               className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary"
             >
               <option value="payment">{t('Оплата')}</option>

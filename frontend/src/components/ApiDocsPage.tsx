@@ -137,11 +137,19 @@ export function ApiDocsPage() {
 
         <div className="flex flex-col lg:flex-row gap-8">
           <aside className="lg:w-80 w-full">
-            <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-6 space-y-6">
+            <div
+              className="bg-white rounded-2xl border border-gray-200 shadow-sm p-6 space-y-6"
+              role="tablist"
+              aria-label={t('API документация')}
+            >
               {docs.map((doc) => (
                 <button
                   key={doc.id}
                   onClick={() => setActiveDoc(doc.id)}
+                  role="tab"
+                  id={`docs-tab-${doc.id}`}
+                  aria-selected={doc.id === currentDoc.id}
+                  aria-controls={`docs-panel-${doc.id}`}
                   className={`w-full text-left p-4 rounded-xl transition-all ${
                     doc.id === currentDoc.id
                       ? 'bg-primary text-white shadow-md'
@@ -172,7 +180,12 @@ export function ApiDocsPage() {
             </div>
           </aside>
 
-          <section className="flex-1">
+          <section
+            className="flex-1"
+            role="tabpanel"
+            id={`docs-panel-${currentDoc.id}`}
+            aria-labelledby={`docs-tab-${currentDoc.id}`}
+          >
             <div className="bg-white border border-gray-200 rounded-3xl shadow-sm">
               <div className="p-8 border-b border-gray-100">
                 <p className="text-sm uppercase font-semibold tracking-wide text-primary mb-2">

@@ -75,6 +75,7 @@ CREATE TABLE response (
                           id         SERIAL PRIMARY KEY,
                           sender_id  INT NOT NULL REFERENCES app_user(id) ON DELETE CASCADE,
                           service_id INT NOT NULL REFERENCES service(id) ON DELETE CASCADE,
+                          status     service_status NOT NULL DEFAULT 'active',
                           created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
                           CONSTRAINT unq_response UNIQUE (sender_id, service_id)
 );

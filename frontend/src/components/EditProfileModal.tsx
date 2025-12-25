@@ -1,8 +1,10 @@
 import { useMemo, useState } from 'react';
 import { X } from 'lucide-react';
 import { updateUserProfile } from '../api/userService';
+import { ApiError } from '../api/http';
 import { useAuthStore } from '../store/authStore';
 import { useI18n } from '../i18n/useI18n';
+import { LoadingIndicator } from './LoadingIndicator';
 
 interface EditProfileModalProps {
   onClose: () => void;
@@ -27,17 +29,46 @@ export function EditProfileModal({ onClose }: EditProfileModalProps) {
     user?.profile?.avatar ? `data:image/png;base64,${user.profile.avatar}` : null,
   );
   const [avatarFileName, setAvatarFileName] = useState<string | null>(null);
+  const [isAvatarProcessing, setIsAvatarProcessing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const hasAvatar = useMemo(() => Boolean(avatarPreview), [avatarPreview]);
+  const normalizePhone = (value: string) => value.replace(/\D/g, '');
+  const isValidRussianPhone = (value: string) => {
+    const trimmed = value.trim();
+    if (!trimmed) {
+      return true;
+    }
+    const digits = normalizePhone(trimmed);
+    if (digits.length !== 11) {
+      return false;
+    }
+    return digits.startsWith('7') || digits.startsWith('8');
+  };
+  const getProfileErrorMessage = (err: unknown) => {
+    if (err instanceof ApiError) {
+      if (err.status === 403) {
+        return t('Нет прав для изменения профиля.');
+      }
+      if (err.status === 400 || err.status === 422) {
+        return t('Проверьте корректность заполнения полей.');
+      }
+      if (err.message) {
+        return err.message;
+      }
+    }
+    return err instanceof Error ? err.message : t('Не удалось обновить профиль.');
+  };
 
   const handleAvatarChange = (file: File | null) => {
     if (!file) {
       return;
     }
+    setIsAvatarProcessing(true);
     if (!file.type.startsWith('image/')) {
       setError(t('Можно загружать только изображения.'));
+      setIsAvatarProcessing(false);
       return;
     }
 
@@ -67,14 +98,17 @@ export function EditProfileModal({ onClose }: EditProfileModalProps) {
         setAvatarBase64(base64);
         setAvatarFileName(file.name);
         setError(null);
+        setIsAvatarProcessing(false);
       };
       image.onerror = () => {
         setError(t('Не удалось загрузить изображение.'));
+        setIsAvatarProcessing(false);
       };
       image.src = String(reader.result);
     };
     reader.onerror = () => {
       setError(t('Не удалось прочитать файл.'));
+      setIsAvatarProcessing(false);
     };
     reader.readAsDataURL(file);
   };
@@ -83,6 +117,11 @@ export function EditProfileModal({ onClose }: EditProfileModalProps) {
     e.preventDefault();
     if (!user || !token) {
       setError(t('Не удалось определить пользователя.'));
+      return;
+    }
+
+    if (!isValidRussianPhone(formData.phone)) {
+      setError(t('Введите корректный российский номер телефона.'));
       return;
     }
 
@@ -102,8 +141,7 @@ export function EditProfileModal({ onClose }: EditProfileModalProps) {
       setUser(updated);
       onClose();
     } catch (err) {
-      const message = err instanceof Error ? err.message : t('Не удалось обновить профиль.');
-      setError(message);
+      setError(getProfileErrorMessage(err));
     } finally {
       setIsSubmitting(false);
     }
@@ -111,13 +149,19 @@ export function EditProfileModal({ onClose }: EditProfileModalProps) {
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+      <div
+        className="bg-white rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="edit-profile-title"
+      >
         {/* Header */}
         <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between">
-          <h3>{t('Редактировать профиль')}</h3>
+          <h3 id="edit-profile-title">{t('Редактировать профиль')}</h3>
           <button
             onClick={onClose}
             className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+            aria-label={t('Закрыть')}
           >
             <X className="w-5 h-5" />
           </button>
@@ -133,6 +177,7 @@ export function EditProfileModal({ onClose }: EditProfileModalProps) {
               required
               value={formData.name}
               onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+              aria-label={t('Имя *')}
               className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary"
             />
           </div>
@@ -145,6 +190,7 @@ export function EditProfileModal({ onClose }: EditProfileModalProps) {
               required
               value={formData.surname}
               onChange={(e) => setFormData({ ...formData, surname: e.target.value })}
+              aria-label={t('Фамилия *')}
               className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary"
             />
           </div>
@@ -156,6 +202,7 @@ export function EditProfileModal({ onClose }: EditProfileModalProps) {
               type="text"
               value={formData.middleName}
               onChange={(e) => setFormData({ ...formData, middleName: e.target.value })}
+              aria-label={t('Отчество')}
               className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary"
             />
           </div>
@@ -168,6 +215,7 @@ export function EditProfileModal({ onClose }: EditProfileModalProps) {
               required
               value={formData.faculty}
               onChange={(e) => setFormData({ ...formData, faculty: e.target.value })}
+              aria-label={t('Факультет *')}
               className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary"
             />
           </div>
@@ -179,6 +227,7 @@ export function EditProfileModal({ onClose }: EditProfileModalProps) {
               type="email"
               value={formData.email}
               readOnly
+              aria-label={t('Email')}
               className="w-full px-4 py-3 border border-gray-300 rounded-xl bg-gray-50 text-gray-500"
             />
           </div>
@@ -202,6 +251,7 @@ export function EditProfileModal({ onClose }: EditProfileModalProps) {
                   type="file"
                   accept="image/*"
                   onChange={(event) => handleAvatarChange(event.target.files?.[0] ?? null)}
+                  aria-label={t('Фото профиля')}
                   aria-hidden="true"
                   className="sr-only"
                   style={{ position: 'absolute', opacity: 0, width: 0, height: 0, pointerEvents: 'none' }}
@@ -216,6 +266,11 @@ export function EditProfileModal({ onClose }: EditProfileModalProps) {
                   <p className="text-xs text-gray-500 mt-1">{avatarFileName}</p>
                 )}
                 <p className="text-xs text-gray-500 mt-1">{t('Только изображения, будет сжато до 512×512.')}</p>
+                {isAvatarProcessing && (
+                  <div className="mt-2">
+                    <LoadingIndicator label={t('Обрабатываем изображение...')} size="sm" />
+                  </div>
+                )}
               </div>
             </div>
           </div>
@@ -228,6 +283,7 @@ export function EditProfileModal({ onClose }: EditProfileModalProps) {
               value={formData.telegram}
               onChange={(e) => setFormData({ ...formData, telegram: e.target.value })}
               placeholder="@username"
+              aria-label={t('Telegram')}
               className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary"
             />
           </div>
@@ -240,6 +296,7 @@ export function EditProfileModal({ onClose }: EditProfileModalProps) {
               value={formData.phone}
               onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
               placeholder="+7 (999) 999-99-99"
+              aria-label={t('Телефон')}
               className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary"
             />
           </div>

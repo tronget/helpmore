@@ -414,9 +414,13 @@ export function AdminPanelPage() {
               <h3 className="mb-1">{t('Администрирование')}</h3>
               <p className="text-sm text-gray-500">{t('Выберите раздел управления')}</p>
             </div>
-            <div className="flex gap-2">
+            <div className="flex gap-2" role="tablist" aria-label={t('Администрирование')}>
               <button
                 onClick={() => setActiveSection('users')}
+                role="tab"
+                id="admin-tab-users"
+                aria-selected={activeSection === 'users'}
+                aria-controls="admin-panel-users"
                 className={`px-4 py-2 rounded-lg text-sm border transition-colors ${
                   activeSection === 'users'
                     ? 'border-primary text-primary bg-primary-lighter'
@@ -427,6 +431,10 @@ export function AdminPanelPage() {
               </button>
               <button
                 onClick={() => setActiveSection('services')}
+                role="tab"
+                id="admin-tab-services"
+                aria-selected={activeSection === 'services'}
+                aria-controls="admin-panel-services"
                 className={`px-4 py-2 rounded-lg text-sm border transition-colors ${
                   activeSection === 'services'
                     ? 'border-primary text-primary bg-primary-lighter'
@@ -437,6 +445,10 @@ export function AdminPanelPage() {
               </button>
               <button
                 onClick={() => setActiveSection('reports')}
+                role="tab"
+                id="admin-tab-reports"
+                aria-selected={activeSection === 'reports'}
+                aria-controls="admin-panel-reports"
                 className={`px-4 py-2 rounded-lg text-sm border transition-colors ${
                   activeSection === 'reports'
                     ? 'border-primary text-primary bg-primary-lighter'
@@ -447,6 +459,10 @@ export function AdminPanelPage() {
               </button>
               <button
                 onClick={() => setActiveSection('bugs')}
+                role="tab"
+                id="admin-tab-bugs"
+                aria-selected={activeSection === 'bugs'}
+                aria-controls="admin-panel-bugs"
                 className={`px-4 py-2 rounded-lg text-sm border transition-colors ${
                   activeSection === 'bugs'
                     ? 'border-primary text-primary bg-primary-lighter'
@@ -459,7 +475,7 @@ export function AdminPanelPage() {
           </div>
 
           {activeSection === 'users' && (
-            <>
+            <div id="admin-panel-users" role="tabpanel" aria-labelledby="admin-tab-users">
               <div className="p-6 border-b border-gray-100 flex items-center justify-between">
                 <div>
                   <h3 className="mb-1">{t('Пользователи')}</h3>
@@ -516,6 +532,7 @@ export function AdminPanelPage() {
                             value={item.role}
                             disabled={!isAdmin || actionUserId === item.id}
                             onChange={(event) => handleRoleChange(item.id, event.target.value as RoleOption)}
+                            aria-label={t('Роль')}
                             className="px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary"
                           >
                             {roleOptions.map((role) => (
@@ -537,6 +554,7 @@ export function AdminPanelPage() {
                             onChange={(event) =>
                               setBanInputs((prev) => ({ ...prev, [item.id]: event.target.value }))
                             }
+                            aria-label={t('Блокировка')}
                             className="px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary"
                           />
                           <button
@@ -577,11 +595,16 @@ export function AdminPanelPage() {
                   )}
                 </div>
               )}
-            </>
+            </div>
           )}
 
           {activeSection === 'services' && (
-            <div className="p-6 space-y-8">
+            <div
+              id="admin-panel-services"
+              role="tabpanel"
+              aria-labelledby="admin-tab-services"
+              className="p-6 space-y-8"
+            >
               <div>
                 <div className="flex items-center gap-2 mb-4">
                   <Wrench className="w-5 h-5 text-primary" />
@@ -594,6 +617,7 @@ export function AdminPanelPage() {
                     value={categoryDraft}
                     onChange={(event) => setCategoryDraft(event.target.value)}
                     placeholder={t('Новая категория')}
+                    aria-label={t('Новая категория')}
                     className="px-4 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary"
                   />
                   <button
@@ -618,6 +642,7 @@ export function AdminPanelPage() {
                         onChange={(event) =>
                           setCategoryEdits((prev) => ({ ...prev, [category.id]: event.target.value }))
                         }
+                        aria-label={t('Категории')}
                         className="flex-1 min-w-[220px] px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary"
                       />
                       <button
@@ -653,6 +678,7 @@ export function AdminPanelPage() {
                     value={serviceQuery}
                     onChange={(event) => setServiceQuery(event.target.value)}
                     placeholder={t('Поиск по названию')}
+                    aria-label={t('Поиск по названию')}
                     className="px-4 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary"
                   />
                   <input
@@ -660,11 +686,13 @@ export function AdminPanelPage() {
                     value={serviceOwnerId}
                     onChange={(event) => setServiceOwnerId(event.target.value)}
                     placeholder="Owner ID"
+                    aria-label="Owner ID"
                     className="px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary w-28"
                   />
                   <select
                     value={serviceCategoryId}
                     onChange={(event) => setServiceCategoryId(event.target.value)}
+                    aria-label={t('Категория')}
                     className="px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary"
                   >
                     <option value="">{t('Все категории')}</option>
@@ -677,6 +705,7 @@ export function AdminPanelPage() {
                   <select
                     value={serviceType}
                     onChange={(event) => setServiceType(event.target.value as 'OFFER' | 'ORDER' | 'ALL')}
+                    aria-label={t('Все типы')}
                     className="px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary"
                   >
                     <option value="ALL">{t('Все типы')}</option>
@@ -686,6 +715,7 @@ export function AdminPanelPage() {
                   <select
                     value={serviceStatus}
                     onChange={(event) => setServiceStatus(event.target.value as ServiceStatus | 'ALL')}
+                    aria-label={t('Все статусы')}
                     className="px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary"
                   >
                     <option value="ALL">{t('Все статусы')}</option>
@@ -697,6 +727,7 @@ export function AdminPanelPage() {
                     value={serviceMinPrice}
                     onChange={(event) => setServiceMinPrice(event.target.value)}
                     placeholder={t('Мин цена')}
+                    aria-label={t('Мин цена')}
                     className="px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary w-28"
                   />
                   <input
@@ -704,6 +735,7 @@ export function AdminPanelPage() {
                     value={serviceMaxPrice}
                     onChange={(event) => setServiceMaxPrice(event.target.value)}
                     placeholder={t('Макс цена')}
+                    aria-label={t('Макс цена')}
                     className="px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary w-28"
                   />
                   <label className="flex items-center gap-2 text-sm text-gray-600">
@@ -711,6 +743,7 @@ export function AdminPanelPage() {
                       type="checkbox"
                       checked={serviceBarterOnly}
                       onChange={(event) => setServiceBarterOnly(event.target.checked)}
+                      aria-label={t('Только бартер')}
                     />
                     {t('Только бартер')}
                   </label>
@@ -718,12 +751,14 @@ export function AdminPanelPage() {
                     type="datetime-local"
                     value={serviceCreatedAfter}
                     onChange={(event) => setServiceCreatedAfter(event.target.value)}
+                    aria-label={t('Дата от')}
                     className="px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary"
                   />
                   <input
                     type="datetime-local"
                     value={serviceCreatedBefore}
                     onChange={(event) => setServiceCreatedBefore(event.target.value)}
+                    aria-label={t('Дата до')}
                     className="px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary"
                   />
                   <button
@@ -793,7 +828,12 @@ export function AdminPanelPage() {
           )}
 
           {activeSection === 'reports' && (
-            <div className="p-6 space-y-4">
+            <div
+              id="admin-panel-reports"
+              role="tabpanel"
+              aria-labelledby="admin-tab-reports"
+              className="p-6 space-y-4"
+            >
               <div className="flex items-center justify-between">
                 <div>
                   <h3>{t('Жалобы')}</h3>
@@ -846,6 +886,7 @@ export function AdminPanelPage() {
                         onChange={(event) =>
                           setReportBanInputs((prev) => ({ ...prev, [report.id]: event.target.value }))
                         }
+                        aria-label={t('Укажите дату и время бана.')}
                         className="px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary"
                       />
                       <button
@@ -908,7 +949,12 @@ export function AdminPanelPage() {
           )}
 
           {activeSection === 'bugs' && (
-            <div className="p-6 space-y-4">
+            <div
+              id="admin-panel-bugs"
+              role="tabpanel"
+              aria-labelledby="admin-tab-bugs"
+              className="p-6 space-y-4"
+            >
               <div className="flex items-center justify-between">
                 <div>
                   <h3>{t('Баг-репорты')}</h3>

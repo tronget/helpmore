@@ -56,6 +56,7 @@ export function Header({ onNavigateHome, onNavigateProfile, onNavigateChat, onNa
           <button 
             onClick={onNavigateChat}
             className="p-2 hover:bg-gray-100 rounded-lg transition-colors relative"
+            aria-label={t('Чаты')}
           >
             <MessageCircle className="w-5 h-5 text-gray-600" />
             <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full"></span>
@@ -78,7 +79,10 @@ export function Header({ onNavigateHome, onNavigateProfile, onNavigateChat, onNa
           </button>
 
           <Select value={locale} onValueChange={(value) => setLocale(value as Locale)}>
-            <SelectTrigger className="w-[148px] justify-between hover:bg-gray-50">
+            <SelectTrigger
+              className="w-[148px] justify-between hover:bg-gray-50"
+              aria-label={t('Язык')}
+            >
               <span className="text-xl">{localeFlagsMap[locale]}</span>
               <span className="text-sm text-gray-900">{localeLabelsMap[locale]}</span>
             </SelectTrigger>

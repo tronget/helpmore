@@ -5,6 +5,7 @@ import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import org.moysha.managementservice.domain.response.ResponseStatus;
 
 @Getter
 @Setter
@@ -15,6 +16,6 @@ public class ResponseDto {
     private Long id;
     private Long serviceId;
     private Long senderId;
-    private String comment;
+    private ResponseStatus status;
     private Instant createdAt;
 }

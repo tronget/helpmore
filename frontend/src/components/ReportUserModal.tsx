@@ -61,12 +61,18 @@ export function ReportUserModal({ reportedUserId, onClose, onCreated }: ReportUs
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-2xl max-w-xl w-full max-h-[90vh] overflow-y-auto">
+      <div
+        className="bg-white rounded-2xl max-w-xl w-full max-h-[90vh] overflow-y-auto"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="report-user-title"
+      >
         <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between">
-          <h3>{t('Пожаловаться на пользователя')}</h3>
+          <h3 id="report-user-title">{t('Пожаловаться на пользователя')}</h3>
           <button
             onClick={onClose}
             className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+            aria-label={t('Закрыть')}
           >
             <X className="w-5 h-5" />
           </button>
@@ -78,6 +84,7 @@ export function ReportUserModal({ reportedUserId, onClose, onCreated }: ReportUs
             <select
               value={type}
               onChange={(event) => setType(event.target.value as ReportType)}
+              aria-label={t('Тип жалобы *')}
               className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary"
             >
               {reportOptions.map((option) => (
@@ -94,6 +101,7 @@ export function ReportUserModal({ reportedUserId, onClose, onCreated }: ReportUs
               value={title}
               onChange={(event) => setTitle(event.target.value)}
               maxLength={255}
+              aria-label={t('Заголовок *')}
               className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary"
               placeholder={t('Коротко опишите проблему')}
             />
@@ -107,6 +115,7 @@ export function ReportUserModal({ reportedUserId, onClose, onCreated }: ReportUs
               onChange={(event) => setDescription(event.target.value)}
               rows={4}
               maxLength={2048}
+              aria-label={t('Описание')}
               className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary resize-none"
               placeholder={t('Добавьте детали')}
             />

@@ -8,7 +8,6 @@ import org.moysha.managementservice.domain.feedback.FeedbackEntity;
 import org.moysha.managementservice.domain.service.ServiceEntity;
 import org.moysha.managementservice.domain.user.AppUserEntity;
 import org.moysha.managementservice.exception.BadRequestException;
-import org.moysha.managementservice.exception.ConflictException;
 import org.moysha.managementservice.exception.NotFoundException;
 import org.moysha.managementservice.repository.AppUserRepository;
 import org.moysha.managementservice.repository.FeedbackRepository;
@@ -40,13 +39,11 @@ public class FeedbackService {
         if (service.getOwner().getId().equals(request.getSenderId())) {
             throw new BadRequestException("Owner cannot rate own service");
         }
-        if (feedbackRepository.existsBySender_IdAndService_Id(request.getSenderId(), serviceId)) {
-            throw new ConflictException("Feedback already exists for user %s".formatted(request.getSenderId()));
-        }
         AppUserEntity sender = appUserRepository.findById(request.getSenderId())
             .orElseThrow(() -> new NotFoundException("User not found: " + request.getSenderId()));
 
-        FeedbackEntity entity = new FeedbackEntity();
+        FeedbackEntity entity = feedbackRepository.findBySender_IdAndService_Id(request.getSenderId(), serviceId)
+            .orElseGet(FeedbackEntity::new);
         entity.setService(service);
         entity.setSender(sender);
         entity.setRate(request.getRate());

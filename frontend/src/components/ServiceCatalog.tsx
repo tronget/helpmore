@@ -5,6 +5,7 @@ import { useUsersById } from '../hooks/useUsersById';
 import { searchServices, type ServiceDto } from '../api/marketplaceService';
 import { useAuthStore } from '../store/authStore';
 import { AvatarPlaceholder } from './AvatarPlaceholder';
+import { LoadingIndicator } from './LoadingIndicator';
 import { useI18n } from '../i18n/useI18n';
 
 interface ServiceCatalogProps {
@@ -131,6 +132,7 @@ export function ServiceCatalog({ searchQuery, selectedCategory, onNavigateToServ
             <select
               value={selectedCategoryFilter}
               onChange={(e) => setSelectedCategoryFilter(e.target.value)}
+              aria-label={t('Категория')}
               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
             >
               <option value="all">{t('Все категории')}</option>
@@ -151,6 +153,7 @@ export function ServiceCatalog({ searchQuery, selectedCategory, onNavigateToServ
                 value={minPriceFilter}
                 onChange={(event) => setMinPriceFilter(event.target.value)}
                 placeholder={t('Мин')}
+                aria-label={t('Мин цена')}
                 className="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
               />
               <input
@@ -158,6 +161,7 @@ export function ServiceCatalog({ searchQuery, selectedCategory, onNavigateToServ
                 value={maxPriceFilter}
                 onChange={(event) => setMaxPriceFilter(event.target.value)}
                 placeholder={t('Макс')}
+                aria-label={t('Макс цена')}
                 className="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
               />
             </div>
@@ -170,6 +174,7 @@ export function ServiceCatalog({ searchQuery, selectedCategory, onNavigateToServ
                 type="checkbox"
                 checked={barterOnly}
                 onChange={(event) => setBarterOnly(event.target.checked)}
+                aria-label={t('Только бартер')}
               />
               {t('Только бартер')}
             </label>
@@ -197,11 +202,19 @@ export function ServiceCatalog({ searchQuery, selectedCategory, onNavigateToServ
           <p className="text-gray-600">{t('Найдено услуг: {count}', { count: serviceCards.length })}</p>
         </div>
         
-        <div className="grid grid-cols-3 gap-6">
+        <div className="grid grid-cols-3 gap-6" aria-busy={isLoading}>
           {serviceCards.map((service) => (
-            <button
+            <div
               key={service.id}
+              role="button"
+              tabIndex={0}
               onClick={() => onNavigateToService(String(service.id))}
+              onKeyDown={(event) => {
+                if (event.key === 'Enter' || event.key === ' ') {
+                  event.preventDefault();
+                  onNavigateToService(String(service.id));
+                }
+              }}
               className="bg-white rounded-2xl border border-gray-200 overflow-hidden hover:shadow-lg transition-all group text-left"
             >
               {/* Content */}
@@ -244,13 +257,13 @@ export function ServiceCatalog({ searchQuery, selectedCategory, onNavigateToServ
                   <span className="text-primary">{formatPrice(service.price, service.barter)}</span>
                 </div>
               </div>
-            </button>
+            </div>
           ))}
         </div>
 
         {isLoading && (
-          <div className="text-center py-16">
-            <p className="text-gray-500">{t('Загружаем услуги...')}</p>
+          <div className="flex justify-center py-16">
+            <LoadingIndicator label={t('Загружаем услуги...')} />
           </div>
         )}
 
@@ -266,6 +279,7 @@ export function ServiceCatalog({ searchQuery, selectedCategory, onNavigateToServ
           </div>
         )}
       </div>
+
     </div>
   );
 }
