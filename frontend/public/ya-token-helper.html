@@ -19,15 +19,52 @@
     </style>
   </head>
   <body>
-    <p>Подтверждаем авторизацию...</p>
+    <p id="status">Подтверждаем авторизацию...</p>
     <script>
       (function () {
+        const statusEl = document.getElementById('status');
         const start = Date.now();
 
-        function sendToken() {
+        function parseHash() {
+          const hash = window.location.hash.startsWith('#') ? window.location.hash.slice(1) : '';
+          const params = new URLSearchParams(hash);
+          const accessToken = params.get('access_token');
+          if (!accessToken) return null;
+          return {
+            access_token: accessToken,
+            expires_in: params.get('expires_in'),
+            token_type: params.get('token_type'),
+          };
+        }
+
+        function showToken(token) {
+          statusEl.textContent = 'Токен получен. Можно закрыть это окно.';
+          const info = document.createElement('pre');
+          info.style.whiteSpace = 'pre-wrap';
+          info.style.wordBreak = 'break-all';
+          info.textContent = token.access_token;
+          document.body.appendChild(info);
+        }
+
+        function sendTokenToOpener(payload) {
+          if (window.opener && !window.opener.closed) {
+            window.opener.postMessage(
+              {
+                type: 'yandex_oauth_token',
+                payload,
+              },
+              '*',
+            );
+            setTimeout(() => window.close(), 300);
+            return true;
+          }
+          return false;
+        }
+
+        function sendSuggestToken() {
           if (typeof window.YaSendSuggestToken !== 'function') {
             if (Date.now() - start > 5000) return;
-            setTimeout(sendToken, 100);
+            setTimeout(sendSuggestToken, 100);
             return;
           }
 
@@ -40,7 +77,14 @@
           }
         }
 
-        sendToken();
+        const oauthToken = parseHash();
+        if (oauthToken) {
+          const sent = sendTokenToOpener(oauthToken);
+          showToken(oauthToken);
+          if (sent) return;
+        }
+
+        sendSuggestToken();
       })();
     </script>
   </body>

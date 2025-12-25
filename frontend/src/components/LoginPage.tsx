@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import logo from 'figma:asset/6ee6e9716cea49265cf2002d25a60b45f5d06fb7.png';
 import { type AuthSession } from '../store/authStore';
 import type { YandexAuthResponse } from '../types/yandex';
@@ -14,37 +14,11 @@ const YANDEX_ICON =
   'https://upload.wikimedia.org/wikipedia/commons/thumb/5/58/Yandex_icon.svg/2048px-Yandex_icon.svg.png';
 
 export function LoginPage({ onLogin }: LoginPageProps) {
-  const [isSdkReady, setIsSdkReady] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [manualToken, setManualToken] = useState('');
-  const [showManualFlow, setShowManualFlow] = useState(false);
   const { t } = useI18n();
-
-  useEffect(() => {
-    let cancelled = false;
-
-    const waitForSdk = () => {
-      if (cancelled) {
-        return;
-      }
-
-      if (typeof window === 'undefined' || typeof window.YaAuthSuggest === 'undefined') {
-        console.warn('[YandexAuth] sdk-suggest пока не доступен. Ждём...');
-        setTimeout(waitForSdk, 200);
-        return;
-      }
-
-      console.log('[YandexAuth] sdk-suggest готов.');
-      setIsSdkReady(true);
-    };
-
-    waitForSdk();
-
-    return () => {
-      cancelled = true;
-    };
-  }, []);
+  const redirectUri = getYandexRedirectUri();
+  const popupRef = useRef<Window | null>(null);
 
   const authenticateWithServer = useCallback(async (token: string) => {
     await loginWithYandex(token);
@@ -55,110 +29,93 @@ export function LoginPage({ onLogin }: LoginPageProps) {
     }
   }, []);
 
+  useEffect(() => {
+    const redirectOrigin = new URL(redirectUri).origin;
+    const handleMessage = (event: MessageEvent) => {
+      if (event.origin !== window.location.origin && event.origin !== redirectOrigin) {
+        return;
+      }
+
+      const data = event.data as { type?: string; payload?: YandexAuthResponse };
+      if (!data || data.type !== 'yandex_oauth_token' || !data.payload) {
+        return;
+      }
+
+      const token = data.payload.access_token ?? data.payload.token;
+      if (!token) {
+        setError(t('Пустой токен авторизации'));
+        return;
+      }
+
+      setIsSubmitting(true);
+      setError(null);
+
+      authenticateWithServer(token)
+        .then((user) => {
+          const session: AuthSession = {
+            token,
+            expiresIn: data.payload.expires_in,
+            user: user ?? undefined,
+            rawPayload: data.payload,
+          };
+          onLogin(session);
+        })
+        .catch((authError: unknown) => {
+          const message = authError instanceof Error ? authError.message : t('Не удалось выполнить вход.');
+          setError(message);
+        })
+        .finally(() => setIsSubmitting(false));
+    };
+
+    window.addEventListener('message', handleMessage);
+    return () => window.removeEventListener('message', handleMessage);
+  }, [authenticateWithServer, onLogin, redirectUri, t]);
+
+  const buildOauthUrl = useCallback(() => {
+    const authUrl = new URL('https://oauth.yandex.ru/authorize');
+    authUrl.searchParams.set('response_type', 'token');
+    authUrl.searchParams.set('client_id', YANDEX_CLIENT_ID);
+    authUrl.searchParams.set('redirect_uri', redirectUri);
+    return authUrl.toString();
+  }, [redirectUri]);
+
+  const openPopupShell = useCallback(() => {
+    const width = 480;
+    const height = 640;
+    const left = window.screenX + (window.outerWidth - width) / 2;
+    const top = window.screenY + (window.outerHeight - height) / 2;
+    const popup = window.open(
+      '',
+      'yandex-oauth',
+      `width=${width},height=${height},left=${left},top=${top},resizable=yes,scrollbars=yes`,
+    );
+
+    if (!popup) {
+      return false;
+    }
+
+    popupRef.current = popup;
+    return true;
+  }, [t]);
+
+  const navigatePopupToAuth = useCallback(() => {
+    if (!popupRef.current || popupRef.current.closed) {
+      return false;
+    }
+    popupRef.current.location.href = buildOauthUrl();
+    return true;
+  }, [buildOauthUrl]);
+
   const handleLoginClick = useCallback(() => {
-    const hasSdk =
-      typeof window !== 'undefined' &&
-      typeof window.YaAuthSuggest === 'object' &&
-      typeof window.YaAuthSuggest?.init === 'function';
-    console.log('[YandexAuth] onClick', {
-      isSdkReady,
-      hasSdk,
-      yaAuthSuggestType: typeof window.YaAuthSuggest,
-      hasInit: typeof window.YaAuthSuggest?.init,
-    });
-    if (!hasSdk) {
-      console.warn('[YandexAuth] YaAuthSuggest не найден в window, прерываемся');
-      setError(t('Скрипт Яндекса ещё загружается. Попробуйте через пару секунд.'));
-      return;
-    }
-
-    setIsSubmitting(true);
     setError(null);
-
-    const redirectUri = getYandexRedirectUri();
-    const widgetOrigin = new URL(redirectUri).origin;
-
-    console.log('[YandexAuth] вызываем YaAuthSuggest.init', {
-      redirectUri,
-      widgetOrigin,
-    });
-
-    window
-      .YaAuthSuggest!.init(
-        {
-          client_id: YANDEX_CLIENT_ID,
-          response_type: 'token',
-          redirect_uri: redirectUri,
-        },
-        widgetOrigin,
-      )
-      .then(({ handler }) => {
-        console.log('[YandexAuth] init вернул handler, запускаем...');
-        return handler();
-      })
-      .then(async (suggestData: YandexAuthResponse) => {
-        console.log('Сообщение с токеном', suggestData);
-        const token = suggestData.access_token ?? suggestData.token;
-
-        if (!token) {
-          throw new Error('Пустой токен авторизации');
-        }
-
-        const user = await authenticateWithServer(token);
-
-        const session: AuthSession = {
-          token,
-          expiresIn: suggestData.expires_in,
-          user: user ?? undefined,
-          rawPayload: suggestData,
-        };
-
-        onLogin(session);
-      })
-      .catch((sdkError: unknown) => {
-        console.error('[YandexAuth] ошибка', sdkError);
-        const isUnavailable =
-          typeof sdkError === 'object' &&
-          sdkError !== null &&
-          'code' in sdkError &&
-          (sdkError as { code?: string }).code === 'not_available';
-
-        if (isUnavailable) {
-          setShowManualFlow(true);
-          setError(
-            t('Яндекс не выдаёт токен для локального домена. Используйте временный токен, полученный вручную.'),
-          );
-        } else {
-          setError(t('Не удалось выполнить вход. Попробуйте снова или обратитесь в поддержку.'));
-        }
-      })
-      .finally(() => setIsSubmitting(false));
-  }, [authenticateWithServer, isSdkReady, onLogin]);
-
-  const manualAuthUrl = `https://oauth.yandex.ru/authorize?response_type=token&client_id=${YANDEX_CLIENT_ID}`;
-
-  const handleManualLogin = () => {
-    if (!manualToken.trim()) {
-      setError(t('Скопируйте access_token из адресной строки и вставьте его в поле.'));
-      return;
-    }
-
+    const popupOpened = openPopupShell();
     setIsSubmitting(true);
-    setError(null);
 
-    authenticateWithServer(manualToken.trim())
-      .then((user) => {
-        onLogin({
-          token: manualToken.trim(),
-          user: user ?? undefined,
-        });
-      })
-      .catch((authError: unknown) => {
-        const message = authError instanceof Error ? authError.message : t('Не удалось выполнить вход.');
-        setError(message);
-      })
-      .finally(() => setIsSubmitting(false));
-  };
+    const navigated = popupOpened && navigatePopupToAuth();
+    if (!navigated) {
+      setIsSubmitting(false);
+    }
+  }, [navigatePopupToAuth, openPopupShell]);
 
   return (
     <div className="min-h-screen bg-white flex items-center justify-center">
@@ -174,7 +131,7 @@ export function LoginPage({ onLogin }: LoginPageProps) {
 
           <button
             onClick={handleLoginClick}
-            disabled={!isSdkReady || isSubmitting}
+            disabled={isSubmitting}
             className="w-full bg-white border-2 border-gray-900 text-gray-900 py-4 px-6 rounded-xl hover:bg-gray-50 transition-colors flex items-center justify-between relative disabled:opacity-50 disabled:cursor-not-allowed"
           >
             <div className="flex items-center justify-center w-8 h-8 rounded-full flex-shrink-0">
@@ -186,46 +143,6 @@ export function LoginPage({ onLogin }: LoginPageProps) {
           </button>
           {error && <p className="text-sm text-red-500 text-center mt-4">{error}</p>}
 
-          {showManualFlow && (
-            <div className="mt-8 border border-dashed border-gray-300 rounded-2xl p-5 bg-gray-50 space-y-4">
-              <p className="text-sm text-gray-700">
-                {t('Для локальной разработки Яндекс OAuth позволяет получить временный токен вручную.')}
-                {` ${t('Нажмите кнопку ниже, авторизуйтесь и скопируйте значение')}`}{' '}
-                <code className="px-1 py-0.5 mx-1 rounded bg-white text-xs">access_token</code>
-                {` ${t('из адресной строки.')}`}
-              </p>
-
-              <button
-                type="button"
-                onClick={() => window.open(manualAuthUrl, '_blank', 'noopener,noreferrer')}
-                className="w-full bg-primary text-white rounded-xl py-3 hover:bg-primary-light transition-colors text-sm font-semibold"
-              >
-                {t('Открыть страницу авторизации')}
-              </button>
-
-              <div>
-                <label className="text-xs uppercase tracking-wide text-gray-500 block mb-2">
-                  {t('Вставьте access_token')}
-                </label>
-                <textarea
-                  value={manualToken}
-                  onChange={(event) => setManualToken(event.target.value)}
-                  rows={3}
-                  aria-label={t('Вставьте access_token')}
-                  className="w-full border border-gray-300 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-primary text-sm resize-none bg-white"
-                  placeholder="ya29.a0ARrdaM..."
-                />
-              </div>
-
-              <button
-                type="button"
-                onClick={handleManualLogin}
-                className="w-full bg-primary text-white rounded-xl py-3 hover:bg-primary-light transition-colors text-sm font-semibold"
-              >
-                {t('Войти по токену')}
-              </button>
-            </div>
-          )}
         </div>
       </div>
     </div>

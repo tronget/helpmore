@@ -61,8 +61,13 @@
   - Ответ: пустое тело (статус 200/204).
 - `PATCH /api/services/{serviceId}/status` — смена статуса.  
   - Тело: `ChangeServiceStatusRequest { requesterId, status }`.  
-  - Ошибки: `400`, если не владелец; `404`, если сервис не найден.
+  - Ошибки: `400`, если нет прав (не владелец и не модератор/админ); `404`, если сервис или пользователь не найден.
   - Ответ: обновленный `ServiceDto`.
+- `PATCH /api/users/{userId}/services/status` — архивировать/разархивировать все предложения и заказы пользователя.  
+  - Тело: `ChangeServiceStatusRequest { requesterId, status }`.  
+  - Доступ: только админы и модераторы.  
+  - Ошибки: `400`, если нет прав; `404`, если пользователь не найден.
+  - Ответ: `ServiceDto[]` (все сервисы пользователя с новым статусом).
 
 ## Отклики на сервис (responses)
 **DTO:** `ResponseDto { id, serviceId, senderId, status, createdAt }`  
@@ -107,9 +112,9 @@
 - `GET /api/services/{serviceId}/feedback` — список отзывов (Page).  
   - Параметры пагинации `page/size/sort`.  
   - Ответ: `Page<FeedbackDto>`.
-- `POST /api/services/{serviceId}/feedback` — оставить отзыв.  
-  - Ошибки: `400`, если владелец оценивает сам; `404`, если сервис или пользователь не найден; `409`, если отзыв от пользователя уже есть.
-  - Ответ: созданный `FeedbackDto`.
+- `POST /api/services/{serviceId}/feedback` — оставить отзыв (если отзыв от пользователя уже есть, он перезаписывается).  
+  - Ошибки: `400`, если владелец оценивает сам; `404`, если сервис или пользователь не найден.
+  - Ответ: созданный или обновленный `FeedbackDto`.
 - `PUT /api/services/{serviceId}/feedback/{feedbackId}` — обновить отзыв.  
   - Тело: `UpdateFeedbackRequest`.  
   - Ошибки: `400`, если `senderId` не автор; `404`, если отзыв не найден.
