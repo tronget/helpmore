@@ -15,6 +15,7 @@ public class UserProfileResponse {
     private String middleName;
     private byte[] avatar;
     private String faculty;
+    private String bio;
     private String phoneNumber;
     private String telegram;
     private BigDecimal rate;

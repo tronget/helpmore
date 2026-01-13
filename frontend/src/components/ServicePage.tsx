@@ -200,7 +200,7 @@ export function ServicePage({ serviceId, onBack, onNavigateToChat }: ServicePage
                   </div>
                 </div>
                 <div className="flex items-center gap-3">
-                  {isOwner && (
+                  {isOwner && service.status === 'ACTIVE' && (
                     <>
                       <button
                         onClick={() => setShowEditModal(true)}

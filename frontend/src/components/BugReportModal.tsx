@@ -27,6 +27,14 @@ export function BugReportModal({ onClose, onCreated }: BugReportModalProps) {
       setError(t('Укажите заголовок.'));
       return;
     }
+    if (title.length > 255) {
+      setError(t('Невозможно продолжить: заголовок должен быть не более 255 символов.'));
+      return;
+    }
+    if (description.length > 5000) {
+      setError(t('Невозможно продолжить: описание должно быть не более 5000 символов.'));
+      return;
+    }
 
     setIsSubmitting(true);
     setError(null);
@@ -85,12 +93,12 @@ export function BugReportModal({ onClose, onCreated }: BugReportModalProps) {
               value={description}
               onChange={(event) => setDescription(event.target.value)}
               rows={4}
-              maxLength={2048}
+              maxLength={5000}
               aria-label={t('Описание')}
               className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary resize-none"
               placeholder={t('Опишите, что произошло')}
             />
-            <p className="text-xs text-gray-500 mt-1">{description.length}/2048</p>
+            <p className="text-xs text-gray-500 mt-1">{description.length}/5000</p>
           </div>
 
           {error && <p className="text-sm text-red-500">{error}</p>}

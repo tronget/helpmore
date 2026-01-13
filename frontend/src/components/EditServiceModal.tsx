@@ -16,6 +16,7 @@ export function EditServiceModal({ service, onClose, onUpdated }: EditServiceMod
   const { categories } = useCategories();
   const { user } = useAuthStore();
   const { t } = useI18n();
+  const isOrder = service.type === 'ORDER';
   const [formData, setFormData] = useState({
     title: service.title,
     categoryId: String(service.categoryId),
@@ -42,10 +43,22 @@ export function EditServiceModal({ service, onClose, onUpdated }: EditServiceMod
       setError(t('Выберите категорию.'));
       return;
     }
+    if (formData.title.length > 255) {
+      setError(t('Невозможно продолжить: название должно быть не более 255 символов.'));
+      return;
+    }
+    if (formData.description.length > 5000) {
+      setError(t('Невозможно продолжить: описание должно быть не более 5000 символов.'));
+      return;
+    }
+    if (formData.place.length > 255) {
+      setError(t('Невозможно продолжить: место должно быть не более 255 символов.'));
+      return;
+    }
 
     const parsedPrice = Number.parseFloat(formData.price.replace(',', '.'));
     if (!Number.isFinite(parsedPrice)) {
-      setError(t('Укажите корректную цену.'));
+      setError(isOrder ? t('Укажите корректный бюджет.') : t('Укажите корректную цену.'));
       return;
     }
     if (parsedPrice > maxPrice) {
@@ -69,7 +82,12 @@ export function EditServiceModal({ service, onClose, onUpdated }: EditServiceMod
       onUpdated(updated);
       onClose();
     } catch (err) {
-      const message = err instanceof Error ? err.message : t('Не удалось обновить услугу.');
+      const message =
+        err instanceof Error
+          ? err.message
+          : isOrder
+            ? t('Не удалось обновить заказ.')
+            : t('Не удалось обновить услугу.');
       setError(message);
     } finally {
       setIsSubmitting(false);
@@ -85,7 +103,9 @@ export function EditServiceModal({ service, onClose, onUpdated }: EditServiceMod
         aria-labelledby="edit-service-title"
       >
         <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between">
-          <h3 id="edit-service-title">{t('Редактировать услугу')}</h3>
+          <h3 id="edit-service-title">
+            {isOrder ? t('Редактировать заказ') : t('Редактировать услугу')}
+          </h3>
           <button
             onClick={onClose}
             className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
@@ -97,13 +117,16 @@ export function EditServiceModal({ service, onClose, onUpdated }: EditServiceMod
 
         <form onSubmit={handleSubmit} className="p-6 space-y-6">
           <div>
-            <label className="block mb-2 text-gray-700">{t('Название услуги *')}</label>
+            <label className="block mb-2 text-gray-700">
+              {isOrder ? t('Название заказа *') : t('Название услуги *')}
+            </label>
             <input
               type="text"
               required
               value={formData.title}
               onChange={(event) => setFormData({ ...formData, title: event.target.value })}
-              aria-label={t('Название услуги *')}
+              maxLength={255}
+              aria-label={isOrder ? t('Название заказа *') : t('Название услуги *')}
               className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary"
             />
           </div>
@@ -127,12 +150,15 @@ export function EditServiceModal({ service, onClose, onUpdated }: EditServiceMod
           </div>
 
           <div>
-            <label className="block mb-2 text-gray-700">{t('Описание *')}</label>
+            <label className="block mb-2 text-gray-700">
+              {isOrder ? t('Описание задачи *') : t('Описание *')}
+            </label>
             <textarea
               required
               value={formData.description}
               onChange={(event) => setFormData({ ...formData, description: event.target.value })}
-              aria-label={t('Описание *')}
+              maxLength={5000}
+              aria-label={isOrder ? t('Описание задачи *') : t('Описание *')}
               rows={5}
               className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary resize-none"
             />
@@ -140,13 +166,15 @@ export function EditServiceModal({ service, onClose, onUpdated }: EditServiceMod
 
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block mb-2 text-gray-700">{t('Цена *')}</label>
+              <label className="block mb-2 text-gray-700">
+                {isOrder ? t('Бюджет *') : t('Цена *')}
+              </label>
               <input
                 type="text"
                 required
                 value={formData.price}
                 onChange={(event) => setFormData({ ...formData, price: event.target.value })}
-                aria-label={t('Цена *')}
+                aria-label={isOrder ? t('Бюджет *') : t('Цена *')}
                 className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary"
               />
             </div>
@@ -163,12 +191,16 @@ export function EditServiceModal({ service, onClose, onUpdated }: EditServiceMod
           </div>
 
           <div>
-            <label className="block mb-2 text-gray-700">{t('Место')}</label>
+            <label className="block mb-2 text-gray-700">
+              {isOrder ? t('Место *') : t('Место')}
+            </label>
             <input
               type="text"
+              required={isOrder}
               value={formData.place}
               onChange={(event) => setFormData({ ...formData, place: event.target.value })}
-              aria-label={t('Место')}
+              maxLength={255}
+              aria-label={isOrder ? t('Место *') : t('Место')}
               className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary"
             />
           </div>

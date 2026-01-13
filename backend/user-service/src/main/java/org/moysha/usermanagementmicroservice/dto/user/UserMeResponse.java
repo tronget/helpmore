@@ -15,6 +15,7 @@ public class UserMeResponse {
     private String role;
     private String name;
     private String surname;
+    private String bio;
     private String phoneNumber;
     private String telegram;
     private BigDecimal rate;

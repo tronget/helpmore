@@ -1,12 +1,24 @@
 import { useEffect, useMemo, useState } from 'react';
 import { ArrowLeft, MapPin, Clock, MessageCircle } from 'lucide-react';
-import { createResponse, getService, type ServiceDto } from '../api/marketplaceService';
+import { createResponse, deleteService, getService, type ServiceDto } from '../api/marketplaceService';
 import { useUsersById } from '../hooks/useUsersById';
 import { useAuthStore } from '../store/authStore';
 import { AvatarPlaceholder } from './AvatarPlaceholder';
+import { EditServiceModal } from './EditServiceModal';
 import { ReportUserModal } from './ReportUserModal';
 import { UserProfileModal } from './UserProfileModal';
 import { useI18n } from '../i18n/useI18n';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from './ui/alert-dialog';
 
 interface OrderPageProps {
   orderId: string;
@@ -18,7 +30,9 @@ export function OrderPage({ orderId, onBack, onNavigateToChat }: OrderPageProps)
   const [order, setOrder] = useState<ServiceDto | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [showEditModal, setShowEditModal] = useState(false);
   const [showReportModal, setShowReportModal] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [profileUserId, setProfileUserId] = useState<number | null>(null);
   const { token, user } = useAuthStore();
   const { t, locale, dateLocale } = useI18n();
@@ -142,6 +156,55 @@ export function OrderPage({ orderId, onBack, onNavigateToChat }: OrderPageProps)
                     </div>
                   </div>
                 </div>
+                {isOwner && order.status === 'ACTIVE' && (
+                  <div className="flex items-center gap-3">
+                    <button
+                      onClick={() => setShowEditModal(true)}
+                      className="px-4 py-2 border border-gray-200 rounded-xl hover:bg-gray-50 transition-colors text-sm"
+                    >
+                      {t('Редактировать')}
+                    </button>
+                    <AlertDialog open={showDeleteConfirm} onOpenChange={setShowDeleteConfirm}>
+                      <AlertDialogTrigger asChild>
+                        <button
+                          className="px-4 py-2 border border-red-200 text-red-600 rounded-xl hover:bg-red-50 transition-colors text-sm"
+                        >
+                          {t('Удалить')}
+                        </button>
+                      </AlertDialogTrigger>
+                      <AlertDialogContent>
+                        <AlertDialogHeader>
+                          <AlertDialogTitle>{t('Удалить заказ?')}</AlertDialogTitle>
+                          <AlertDialogDescription>
+                            {t('Это действие необратимо. Заказ будет удален навсегда.')}
+                          </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                          <AlertDialogCancel>{t('Отмена')}</AlertDialogCancel>
+                          <AlertDialogAction
+                            className="bg-red-600 text-white hover:bg-red-700"
+                            onClick={async () => {
+                              if (!user) {
+                                return;
+                              }
+                              try {
+                                await deleteService(order.id, user.id);
+                                setShowDeleteConfirm(false);
+                                onBack();
+                              } catch (err) {
+                                const message =
+                                  err instanceof Error ? err.message : t('Не удалось удалить заказ.');
+                                setError(message);
+                              }
+                            }}
+                          >
+                            {t('Удалить')}
+                          </AlertDialogAction>
+                        </AlertDialogFooter>
+                      </AlertDialogContent>
+                    </AlertDialog>
+                  </div>
+                )}
               </div>
 
               {/* Description */}
@@ -161,15 +224,6 @@ export function OrderPage({ orderId, onBack, onNavigateToChat }: OrderPageProps)
               </div>
             </div>
 
-            {/* Requirements */}
-            <div className="bg-white rounded-2xl p-8 border border-gray-200">
-              <h3 className="mb-4">{t('Требования')}</h3>
-              <ul className="space-y-2 text-gray-600">
-                <li>{t('• Опыт работы в данной области')}</li>
-                <li>{t('• Соблюдение установленных сроков')}</li>
-                <li>{t('• Качественное выполнение работы')}</li>
-              </ul>
-            </div>
           </div>
 
           {/* Sidebar - Author Info */}
@@ -266,6 +320,15 @@ export function OrderPage({ orderId, onBack, onNavigateToChat }: OrderPageProps)
         <ReportUserModal
           reportedUserId={order.ownerId}
           onClose={() => setShowReportModal(false)}
+        />
+      )}
+      {showEditModal && order && (
+        <EditServiceModal
+          service={order}
+          onClose={() => setShowEditModal(false)}
+          onUpdated={(updated) => {
+            setOrder(updated);
+          }}
         />
       )}
       {profileUserId && (

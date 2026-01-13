@@ -39,6 +39,7 @@ CREATE TABLE IF NOT EXISTS user_info (
                                          middle_name   VARCHAR(120),
                                          avatar        BYTEA,
                                          faculty       VARCHAR(160),
+                                         bio           VARCHAR(5000),
                                          phone_number  VARCHAR(32),
                                          telegram      VARCHAR(64) UNIQUE,
                                          rate          NUMERIC(3,2) NOT NULL DEFAULT 0.00,

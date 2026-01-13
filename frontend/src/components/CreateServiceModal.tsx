@@ -42,6 +42,18 @@ export function CreateServiceModal({ onClose }: CreateServiceModalProps) {
       setError(t('Выберите категорию из списка.'));
       return;
     }
+    if (formData.title.length > 255) {
+      setError(t('Невозможно продолжить: название должно быть не более 255 символов.'));
+      return;
+    }
+    if (formData.description.length > 5000) {
+      setError(t('Невозможно продолжить: описание должно быть не более 5000 символов.'));
+      return;
+    }
+    if (formData.place.length > 255) {
+      setError(t('Невозможно продолжить: место должно быть не более 255 символов.'));
+      return;
+    }
 
     const parsedPrice = Number.parseFloat(
       formData.price.replace(',', '.').replace(/[^\d.]/g, ''),
@@ -108,6 +120,7 @@ export function CreateServiceModal({ onClose }: CreateServiceModalProps) {
               required
               value={formData.title}
               onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+              maxLength={255}
               placeholder={t('Например: Репетиторство по математике')}
               aria-label={t('Название услуги *')}
               className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary"
@@ -140,6 +153,7 @@ export function CreateServiceModal({ onClose }: CreateServiceModalProps) {
               required
               value={formData.description}
               onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+              maxLength={5000}
               placeholder={t('Подробно опишите вашу услугу...')}
               aria-label={t('Описание *')}
               rows={5}
@@ -184,6 +198,7 @@ export function CreateServiceModal({ onClose }: CreateServiceModalProps) {
               required
               value={formData.place}
               onChange={(e) => setFormData({ ...formData, place: e.target.value })}
+              maxLength={255}
               placeholder={t('Например: Онлайн / Кронверкский пр.')}
               aria-label={t('Место *')}
               className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary"

@@ -34,13 +34,21 @@ export function ReportUserModal({ reportedUserId, onClose, onCreated }: ReportUs
       return;
     }
 
-    setIsSubmitting(true);
-    setError(null);
-
     if (!title.trim()) {
       setError(t('Укажите заголовок жалобы.'));
       return;
     }
+    if (title.length > 255) {
+      setError(t('Невозможно продолжить: заголовок должен быть не более 255 символов.'));
+      return;
+    }
+    if (description.length > 1000) {
+      setError(t('Невозможно продолжить: описание должно быть не более 1000 символов.'));
+      return;
+    }
+
+    setIsSubmitting(true);
+    setError(null);
 
     try {
       await createReport(token, {
@@ -114,12 +122,12 @@ export function ReportUserModal({ reportedUserId, onClose, onCreated }: ReportUs
               value={description}
               onChange={(event) => setDescription(event.target.value)}
               rows={4}
-              maxLength={2048}
+              maxLength={1000}
               aria-label={t('Описание')}
               className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary resize-none"
               placeholder={t('Добавьте детали')}
             />
-            <p className="text-xs text-gray-500 mt-1">{description.length}/2048</p>
+            <p className="text-xs text-gray-500 mt-1">{description.length}/1000</p>
           </div>
 
           {error && <p className="text-sm text-red-500">{error}</p>}

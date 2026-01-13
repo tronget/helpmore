@@ -291,6 +291,15 @@ export function ChatPage({ selectedChatId }: ChatPageProps) {
     if (!user || !currentChat) {
       return;
     }
+    if (
+      completionStatus === 'success' &&
+      !isChatOwner &&
+      review.trim() &&
+      review.trim().length > 5000
+    ) {
+      setError(t('Невозможно продолжить: отзыв должен быть не более 5000 символов.'));
+      return;
+    }
 
     setIsCompleting(true);
     setError(null);
@@ -361,6 +370,10 @@ export function ChatPage({ selectedChatId }: ChatPageProps) {
       return;
     }
     const text = messageText.trim();
+    if (text.length > 5000) {
+      setError(t('Невозможно продолжить: сообщение должно быть не более 5000 символов.'));
+      return;
+    }
     setMessageText('');
     try {
       const msg = await sendMessage(token ?? '', currentChat.response_id, { text });
@@ -663,6 +676,7 @@ export function ChatPage({ selectedChatId }: ChatPageProps) {
                   <input
                     value={messageText}
                     onChange={(e) => setMessageText(e.target.value)}
+                    maxLength={5000}
                     onKeyDown={(e) => {
                       if (e.key === 'Enter' && !e.shiftKey) {
                         e.preventDefault();
@@ -860,6 +874,12 @@ export function ChatPage({ selectedChatId }: ChatPageProps) {
                       <p className="text-xs text-gray-500">{t('Telegram')}</p>
                       <p className="text-sm text-gray-700">{profileUser.profile?.telegram ?? '—'}</p>
                     </div>
+                  </div>
+                  <div className="bg-gray-50 rounded-xl p-4">
+                    <p className="text-xs text-gray-500 mb-2">{t('О себе')}</p>
+                    <p className="text-sm text-gray-700 whitespace-pre-line">
+                      {profileUser.profile?.bio ?? t('Пользователь пока не добавил описание.')}
+                    </p>
                   </div>
                   <div className="bg-gray-50 rounded-xl p-4">
                     <div className="flex items-center justify-between mb-3">

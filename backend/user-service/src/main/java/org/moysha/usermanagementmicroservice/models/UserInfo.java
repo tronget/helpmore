@@ -48,6 +48,9 @@ public class UserInfo {
     @Column(name = "faculty", length = 160)
     private String faculty;
 
+    @Column(name = "bio", length = 5000)
+    private String bio;
+
     @Column(name = "phone_number", length = 32)
     private String phoneNumber;
 

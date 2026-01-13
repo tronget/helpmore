@@ -27,6 +27,9 @@ public class UserProfileRequest {
     @Size(max = 160)
     private String faculty;
 
+    @Size(max = 5000)
+    private String bio;
+
     @Size(max = 32)
     private String phoneNumber;
 

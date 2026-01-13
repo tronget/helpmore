@@ -20,6 +20,7 @@ export function ServiceCatalog({ searchQuery, selectedCategory, onNavigateToServ
   const [minPriceFilter, setMinPriceFilter] = useState('');
   const [maxPriceFilter, setMaxPriceFilter] = useState('');
   const [barterOnly, setBarterOnly] = useState(false);
+  const [highRatingOnly, setHighRatingOnly] = useState(false);
   const { categories } = useCategories();
   const { token } = useAuthStore();
   const { t, locale } = useI18n();
@@ -119,6 +120,9 @@ export function ServiceCatalog({ searchQuery, selectedCategory, onNavigateToServ
       rate,
     };
   });
+  const filteredCards = highRatingOnly
+    ? serviceCards.filter((service) => service.rate > 4)
+    : serviceCards;
 
   return (
     <div className="flex gap-8">
@@ -181,6 +185,18 @@ export function ServiceCatalog({ searchQuery, selectedCategory, onNavigateToServ
             </label>
           </div>
 
+          <div className="mb-6">
+            <label className="flex items-center gap-2 text-sm text-gray-700">
+              <input
+                type="checkbox"
+                checked={highRatingOnly}
+                onChange={(event) => setHighRatingOnly(event.target.checked)}
+                aria-label={t('Только с рейтингом 4+')}
+              />
+              {t('Только с рейтингом 4+')}
+            </label>
+          </div>
+
           {/* Reset Button */}
           <button
             onClick={() => {
@@ -188,6 +204,7 @@ export function ServiceCatalog({ searchQuery, selectedCategory, onNavigateToServ
               setMinPriceFilter('');
               setMaxPriceFilter('');
               setBarterOnly(false);
+              setHighRatingOnly(false);
               onResetFilters();
             }}
             className="w-full px-4 py-2 text-primary border border-primary rounded-lg hover:bg-primary-lighter transition-colors"
@@ -200,11 +217,11 @@ export function ServiceCatalog({ searchQuery, selectedCategory, onNavigateToServ
       {/* Services Grid */}
       <div className="flex-1">
         <div className="mb-4">
-          <p className="text-gray-600">{t('Найдено услуг: {count}', { count: serviceCards.length })}</p>
+          <p className="text-gray-600">{t('Найдено услуг: {count}', { count: filteredCards.length })}</p>
         </div>
         
         <div className="grid grid-cols-3 gap-6" aria-busy={isLoading}>
-          {serviceCards.map((service) => (
+          {filteredCards.map((service) => (
             <div
               key={service.id}
               role="button"
@@ -274,7 +291,7 @@ export function ServiceCatalog({ searchQuery, selectedCategory, onNavigateToServ
           </div>
         )}
 
-        {!isLoading && !error && serviceCards.length === 0 && (
+        {!isLoading && !error && filteredCards.length === 0 && (
           <div className="text-center py-16">
             <p className="text-gray-500">{t('Услуги не найдены')}</p>
           </div>

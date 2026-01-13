@@ -51,6 +51,7 @@ public class UserService {
                 user.getRole().name().toLowerCase(),
                 profile != null ? profile.getName() : null,
                 profile != null ? profile.getSurname() : null,
+                profile != null ? profile.getBio() : null,
                 profile != null ? profile.getPhoneNumber() : null,
                 profile != null ? profile.getTelegram() : null,
                 profile != null ? profile.getRate() : null
@@ -81,7 +82,7 @@ public class UserService {
     public UserResponse updateBanStatus(Integer id, OffsetDateTime bannedTill) {
         AppUser user = findUser(id);
         user.setBannedTill(bannedTill);
-        user.setToken("Banned");
+        user.setToken("BANNED_" + user.getId());
         userRepository.save(user);
         UserInfo profile = userInfoRepository.findByUserId(id).orElse(null);
         return toResponse(user, profile);
@@ -120,6 +121,7 @@ public class UserService {
                 .middleName(request.getMiddleName())
                 .avatar(request.getAvatar())
                 .faculty(request.getFaculty())
+                .bio(request.getBio())
                 .phoneNumber(request.getPhoneNumber())
                 .telegram(request.getTelegram())
                 .build();
@@ -131,6 +133,7 @@ public class UserService {
         profile.setMiddleName(request.getMiddleName());
         profile.setAvatar(request.getAvatar());
         profile.setFaculty(request.getFaculty());
+        profile.setBio(request.getBio());
         profile.setPhoneNumber(request.getPhoneNumber());
         profile.setTelegram(request.getTelegram());
     }
@@ -144,6 +147,7 @@ public class UserService {
                     profile.getMiddleName(),
                     profile.getAvatar(),
                     profile.getFaculty(),
+                    profile.getBio(),
                     profile.getPhoneNumber(),
                     profile.getTelegram(),
                     profile.getRate()

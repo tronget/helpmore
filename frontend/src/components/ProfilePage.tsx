@@ -36,7 +36,7 @@ interface ProfilePageProps {
   onLogout: () => void;
 }
 
-export function ProfilePage({ onNavigateToService, onLogout }: ProfilePageProps) {
+export function ProfilePage({ onNavigateToService, onNavigateToOrder, onLogout }: ProfilePageProps) {
   const { user, token, setUser } = useAuthStore();
   const { t, locale, dateLocale } = useI18n();
   const [activeTab, setActiveTab] = useState<'offers' | 'orders' | 'history' | 'favorites' | 'reports' | 'bugs'>('offers');
@@ -170,8 +170,22 @@ export function ProfilePage({ onNavigateToService, onLogout }: ProfilePageProps)
     if (!user) {
       return t('Пользователь');
     }
-    const parts = [user.profile?.surname, user.profile?.name, user.profile?.middleName].filter(Boolean);
-    return parts.length ? parts.join(' ') : user.email;
+    const surname = user.profile?.surname ?? '';
+    const name = user.profile?.name ?? '';
+    const middleName = user.profile?.middleName ?? '';
+    const fullName = [surname, name, middleName].filter(Boolean).join(' ').trim();
+    if (!fullName) {
+      return user.email;
+    }
+    const shortName = [surname, name].filter(Boolean).join(' ').trim();
+    const nameLength = surname.length + name.length;
+    if (nameLength > 100) {
+      return name.trim() ? name.trim().split(/\s+/).join('\n') : '';
+    }
+    if (nameLength > 50) {
+      return shortName;
+    }
+    return middleName ? fullName : shortName;
   }, [t, user]);
 
   const userEmail = user?.email ?? '—';
@@ -273,8 +287,8 @@ export function ProfilePage({ onNavigateToService, onLogout }: ProfilePageProps)
             {/* Info */}
             <div className="flex-1">
               <div className="flex items-start justify-between mb-4">
-                <div>
-                  <h2 className="mb-2">{userName}</h2>
+                <div className="min-w-0">
+                  <h2 className="mb-2 max-w-[520px] break-words whitespace-pre-line">{userName}</h2>
                   <p className="text-gray-600 mb-4">
                     {user?.profile?.faculty ?? t('Профиль подтверждён')}
                   </p>
@@ -328,6 +342,12 @@ export function ProfilePage({ onNavigateToService, onLogout }: ProfilePageProps)
                   <Phone className="w-4 h-4 text-gray-400" />
                   <span className="text-sm text-gray-600">{user?.profile?.phoneNumber ?? '—'}</span>
                 </div>
+              </div>
+              <div className="pt-6">
+                <p className="text-xs text-gray-500 mb-2">{t('О себе')}</p>
+                <p className="text-sm text-gray-700 whitespace-pre-line max-w-[520px] break-words">
+                  {user?.profile?.bio ?? t('Расскажите о себе, чтобы заказчикам было проще выбрать вас.')}
+                </p>
               </div>
             </div>
           </div>
@@ -581,7 +601,16 @@ export function ProfilePage({ onNavigateToService, onLogout }: ProfilePageProps)
                   {historyOrdersCombined.map((order) => (
                     <div
                       key={order.id}
-                      className="bg-white rounded-2xl border border-gray-200 overflow-hidden group text-left cursor-default"
+                      role="button"
+                      tabIndex={0}
+                      onClick={() => onNavigateToOrder(String(order.id))}
+                      onKeyDown={(event) => {
+                        if (event.key === 'Enter' || event.key === ' ') {
+                          event.preventDefault();
+                          onNavigateToOrder(String(order.id));
+                        }
+                      }}
+                      className="bg-white rounded-2xl border border-gray-200 overflow-hidden hover:shadow-lg transition-all group text-left"
                     >
                       <div className="p-5">
                         <div className="inline-block px-3 py-1 bg-gray-100 text-gray-700 rounded-lg text-sm mb-3">
@@ -638,7 +667,16 @@ export function ProfilePage({ onNavigateToService, onLogout }: ProfilePageProps)
                   {historyOffersCombined.map((service) => (
                     <div
                       key={service.id}
-                      className="bg-white rounded-2xl border border-gray-200 overflow-hidden group text-left cursor-default"
+                      role="button"
+                      tabIndex={0}
+                      onClick={() => onNavigateToService(String(service.id))}
+                      onKeyDown={(event) => {
+                        if (event.key === 'Enter' || event.key === ' ') {
+                          event.preventDefault();
+                          onNavigateToService(String(service.id));
+                        }
+                      }}
+                      className="bg-white rounded-2xl border border-gray-200 overflow-hidden hover:shadow-lg transition-all group text-left"
                     >
                       <div className="p-5">
                         <div className="inline-block px-3 py-1 bg-gray-100 text-gray-700 rounded-lg text-sm mb-3">

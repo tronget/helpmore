@@ -18,6 +18,7 @@ export function EditProfileModal({ onClose }: EditProfileModalProps) {
     surname: user?.profile?.surname ?? '',
     middleName: user?.profile?.middleName ?? '',
     faculty: user?.profile?.faculty ?? '',
+    bio: user?.profile?.bio ?? '',
     email: user?.email ?? '',
     telegram: user?.profile?.telegram ?? '',
     phone: user?.profile?.phoneNumber ?? '',
@@ -119,6 +120,26 @@ export function EditProfileModal({ onClose }: EditProfileModalProps) {
       setError(t('Не удалось определить пользователя.'));
       return;
     }
+    if (formData.name.length > 120) {
+      setError(t('Невозможно продолжить: имя должно быть не более 120 символов.'));
+      return;
+    }
+    if (formData.surname.length > 120) {
+      setError(t('Невозможно продолжить: фамилия должна быть не более 120 символов.'));
+      return;
+    }
+    if (formData.faculty.length > 160) {
+      setError(t('Невозможно продолжить: факультет должен быть не более 160 символов.'));
+      return;
+    }
+    if (formData.telegram.length > 64) {
+      setError(t('Невозможно продолжить: Telegram должен быть не более 64 символов.'));
+      return;
+    }
+    if (formData.bio.length > 5000) {
+      setError(t('Невозможно продолжить: блок "О себе" должен быть не более 5000 символов.'));
+      return;
+    }
 
     if (!isValidRussianPhone(formData.phone)) {
       setError(t('Введите корректный российский номер телефона.'));
@@ -135,6 +156,7 @@ export function EditProfileModal({ onClose }: EditProfileModalProps) {
         middleName: formData.middleName || null,
         avatar: avatarBase64,
         faculty: formData.faculty || null,
+        bio: formData.bio || null,
         phoneNumber: formData.phone || null,
         telegram: formData.telegram || null,
       });
@@ -177,6 +199,7 @@ export function EditProfileModal({ onClose }: EditProfileModalProps) {
               required
               value={formData.name}
               onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+              maxLength={120}
               aria-label={t('Имя *')}
               className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary"
             />
@@ -190,6 +213,7 @@ export function EditProfileModal({ onClose }: EditProfileModalProps) {
               required
               value={formData.surname}
               onChange={(e) => setFormData({ ...formData, surname: e.target.value })}
+              maxLength={120}
               aria-label={t('Фамилия *')}
               className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary"
             />
@@ -202,6 +226,7 @@ export function EditProfileModal({ onClose }: EditProfileModalProps) {
               type="text"
               value={formData.middleName}
               onChange={(e) => setFormData({ ...formData, middleName: e.target.value })}
+              maxLength={120}
               aria-label={t('Отчество')}
               className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary"
             />
@@ -215,9 +240,26 @@ export function EditProfileModal({ onClose }: EditProfileModalProps) {
               required
               value={formData.faculty}
               onChange={(e) => setFormData({ ...formData, faculty: e.target.value })}
+              maxLength={160}
               aria-label={t('Факультет *')}
               className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary"
             />
+          </div>
+
+          {/* Bio */}
+          <div>
+            <label className="block mb-2 text-gray-700">{t('О себе')}</label>
+            <textarea
+              value={formData.bio}
+              onChange={(e) => setFormData({ ...formData, bio: e.target.value })}
+              aria-label={t('О себе')}
+              maxLength={5000}
+              rows={5}
+              className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary resize-none"
+            />
+            <p className="text-xs text-gray-500 mt-2">
+              {t('Максимум {count} символов.', { count: 5000 })}
+            </p>
           </div>
 
           {/* Email */}
@@ -282,6 +324,7 @@ export function EditProfileModal({ onClose }: EditProfileModalProps) {
               type="text"
               value={formData.telegram}
               onChange={(e) => setFormData({ ...formData, telegram: e.target.value })}
+              maxLength={64}
               placeholder="@username"
               aria-label={t('Telegram')}
               className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary"

@@ -9,6 +9,7 @@ export interface AuthUserProfile {
   middleName?: string | null;
   avatar?: string | null;
   faculty?: string | null;
+  bio?: string | null;
   phoneNumber?: string | null;
   telegram?: string | null;
   rate?: number;

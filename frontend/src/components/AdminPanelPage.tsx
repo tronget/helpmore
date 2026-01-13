@@ -91,7 +91,11 @@ export function AdminPanelPage() {
   };
 
   const reportUserIds = useMemo(
-    () => reports.flatMap((report) => [report.userId, report.reportedUserId]),
+    () =>
+      reports.flatMap((report) => [
+        Number(report.reporterId),
+        Number(report.reportedUserId),
+      ]),
     [reports],
   );
   const { users: reportUsersById } = useUsersById(reportUserIds, token);
@@ -238,7 +242,12 @@ export function AdminPanelPage() {
   };
 
   const handleBan = async (userId: number) => {
-    if (!token) {
+    if (!token || !user) {
+      return;
+    }
+    const target = users.find((item) => item.id === userId);
+    if (target?.bannedTill) {
+      setError(t('Пользователь уже забанен.'));
       return;
     }
     const value = banInputs[userId];
@@ -249,9 +258,37 @@ export function AdminPanelPage() {
     setActionUserId(userId);
     try {
       const bannedTill = new Date(value).toISOString();
-      await archiveUserServices(userId);
+      await archiveUserServices(userId, user.id);
       const updated = await updateUserBan(token, userId, { bannedTill });
       setUsers((prev) => prev.map((item) => (item.id === userId ? normalizeUser(updated) : item)));
+    } catch (err) {
+      const message = err instanceof Error ? err.message : t('Не удалось заблокировать пользователя.');
+      setError(message);
+    } finally {
+      setActionUserId(null);
+    }
+  };
+
+  const handleBanWithDate = async (userId: number, dateValue: string) => {
+    if (!token || !user) {
+      return;
+    }
+    const target = users.find((item) => item.id === userId);
+    if (target?.bannedTill) {
+      setError(t('Пользователь уже забанен.'));
+      return;
+    }
+    if (!dateValue) {
+      setError(t('Укажите дату и время блокировки.'));
+      return;
+    }
+    setActionUserId(userId);
+    try {
+      const bannedTill = new Date(dateValue).toISOString();
+      await archiveUserServices(userId, user.id);
+      const updated = await updateUserBan(token, userId, { bannedTill });
+      setUsers((prev) => prev.map((item) => (item.id === userId ? normalizeUser(updated) : item)));
+      setBanInputs((prev) => ({ ...prev, [userId]: dateValue }));
     } catch (err) {
       const message = err instanceof Error ? err.message : t('Не удалось заблокировать пользователя.');
       setError(message);
@@ -276,14 +313,14 @@ export function AdminPanelPage() {
       setActionUserId(null);
     }
   };
-  const archiveUserServices = async (ownerId: number) => {
+  const archiveUserServices = async (ownerId: number, requesterId: number) => {
     try {
       const response = await searchServices({ ownerId, status: 'ACTIVE' }, { size: 200 });
       const servicesToArchive = response.content;
       await Promise.all(
         servicesToArchive.map((service) =>
           changeServiceStatus(service.id, {
-            requesterId: ownerId,
+            requesterId,
             status: 'ARCHIVED',
           }),
         ),
@@ -321,6 +358,10 @@ export function AdminPanelPage() {
       setError(t('Введите название категории.'));
       return;
     }
+    if (name.length > 255) {
+      setError(t('Невозможно продолжить: название категории должно быть не более 255 символов.'));
+      return;
+    }
     try {
       const created = await createCategory({ name });
       setCategories((prev) => [...prev, created]);
@@ -336,6 +377,10 @@ export function AdminPanelPage() {
     const name = categoryEdits[categoryId]?.trim();
     if (!name) {
       setError(t('Введите название категории.'));
+      return;
+    }
+    if (name.length > 255) {
+      setError(t('Невозможно продолжить: название категории должно быть не более 255 символов.'));
       return;
     }
     try {
@@ -592,6 +637,17 @@ export function AdminPanelPage() {
                             <UserCheck className="w-4 h-4" />
                             {t('Разбанить')}
                           </button>
+                          <button
+                            onClick={() => {
+                              const future = new Date();
+                              future.setFullYear(future.getFullYear() + 1000);
+                              handleBanWithDate(item.id, future.toISOString().slice(0, 16));
+                            }}
+                            disabled={actionUserId === item.id}
+                            className="px-3 py-2 rounded-lg text-sm bg-red-500 text-white border border-red-500 hover:bg-red-600 shadow-sm"
+                          >
+                            {t('Забанить на тысячелетие!')}
+                          </button>
                         </div>
 
                         <button
@@ -635,6 +691,7 @@ export function AdminPanelPage() {
                     type="text"
                     value={categoryDraft}
                     onChange={(event) => setCategoryDraft(event.target.value)}
+                    maxLength={255}
                     placeholder={t('Новая категория')}
                     aria-label={t('Новая категория')}
                     className="px-4 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary"
@@ -661,6 +718,7 @@ export function AdminPanelPage() {
                         onChange={(event) =>
                           setCategoryEdits((prev) => ({ ...prev, [category.id]: event.target.value }))
                         }
+                        maxLength={255}
                         aria-label={t('Категории')}
                         className="flex-1 min-w-[220px] px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary"
                       />
@@ -889,10 +947,10 @@ export function AdminPanelPage() {
                       <div className="md:col-span-2">
                         <span className="text-gray-400">{t('От кого → на кого')}</span>
                         <div className="font-medium">
-                          {report.reporterName?.trim() ||
-                            formatReportUser(report.userId, reportUsersById)}{' '}
+                          {([report.reporterSurname, report.reporterName].filter(Boolean).join(' ').trim()) ||
+                            formatReportUser(report.reporterId, reportUsersById)}{' '}
                           →{' '}
-                          {report.reportedName?.trim() ||
+                          {([report.reportedUserSurname, report.reportedUserName].filter(Boolean).join(' ').trim()) ||
                             formatReportUser(report.reportedUserId, reportUsersById)}
                         </div>
                       </div>
@@ -910,7 +968,17 @@ export function AdminPanelPage() {
                       />
                       <button
                         onClick={async () => {
-                          if (!token) {
+                          if (!token || !user) {
+                            return;
+                          }
+                          const reportedUserId = Number(report.reportedUserId);
+                          if (!Number.isFinite(reportedUserId)) {
+                            setError(t('Не удалось определить пользователя для бана.'));
+                            return;
+                          }
+                          const reportedUser = reportUsersById[reportedUserId];
+                          if (reportedUser?.bannedTill) {
+                            setError(t('Пользователь уже забанен.'));
                             return;
                           }
                           const value = reportBanInputs[report.id];
@@ -919,8 +987,8 @@ export function AdminPanelPage() {
                             return;
                           }
                           try {
-                            await archiveUserServices(report.reportedUserId);
-                            await updateUserBan(token, report.reportedUserId, {
+                            await archiveUserServices(reportedUserId, user.id);
+                            await updateUserBan(token, reportedUserId, {
                               bannedTill: new Date(value).toISOString(),
                             });
                           } catch (err) {
@@ -935,7 +1003,17 @@ export function AdminPanelPage() {
                       </button>
                       <button
                         onClick={async () => {
-                          if (!token) {
+                          if (!token || !user) {
+                            return;
+                          }
+                          const reporterId = Number(report.reporterId);
+                          if (!Number.isFinite(reporterId)) {
+                            setError(t('Не удалось определить пользователя для бана.'));
+                            return;
+                          }
+                          const reporter = reportUsersById[reporterId];
+                          if (reporter?.bannedTill) {
+                            setError(t('Пользователь уже забанен.'));
                             return;
                           }
                           const value = reportBanInputs[report.id];
@@ -944,8 +1022,8 @@ export function AdminPanelPage() {
                             return;
                           }
                           try {
-                            await archiveUserServices(report.userId);
-                            await updateUserBan(token, report.userId, {
+                            await archiveUserServices(reporterId, user.id);
+                            await updateUserBan(token, reporterId, {
                               bannedTill: new Date(value).toISOString(),
                             });
                           } catch (err) {

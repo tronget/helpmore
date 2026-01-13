@@ -46,6 +46,18 @@ export function CreateOrderModal({ onClose }: CreateOrderModalProps) {
       setError(t('Выберите категорию из списка.'));
       return;
     }
+    if (formData.title.length > 255) {
+      setError(t('Невозможно продолжить: название должно быть не более 255 символов.'));
+      return;
+    }
+    if (formData.description.length > 5000) {
+      setError(t('Невозможно продолжить: описание должно быть не более 5000 символов.'));
+      return;
+    }
+    if (formData.place.length > 255) {
+      setError(t('Невозможно продолжить: место должно быть не более 255 символов.'));
+      return;
+    }
 
     const parsedPrice = Number.parseFloat(
       formData.budget.replace(',', '.').replace(/[^\d.]/g, ''),
@@ -117,6 +129,7 @@ export function CreateOrderModal({ onClose }: CreateOrderModalProps) {
               required
               value={formData.title}
               onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+              maxLength={255}
               placeholder={t('Например: Нужна помощь с курсовой по базам данных')}
               aria-label={t('Название заказа *')}
               className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary"
@@ -149,6 +162,7 @@ export function CreateOrderModal({ onClose }: CreateOrderModalProps) {
               required
               value={formData.description}
               onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+              maxLength={5000}
               placeholder={t('Подробно опишите, какая помощь вам нужна...')}
               aria-label={t('Описание задачи *')}
               rows={5}
@@ -214,6 +228,7 @@ export function CreateOrderModal({ onClose }: CreateOrderModalProps) {
               required
               value={formData.place}
               onChange={(e) => setFormData({ ...formData, place: e.target.value })}
+              maxLength={255}
               placeholder={t('Например: Онлайн / Биржевая линия')}
               aria-label={t('Место *')}
               className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary"

@@ -147,6 +147,12 @@ export function UserProfileModal({ userId, onClose, showContacts = true }: UserP
                 </div>
               )}
               <div className="bg-gray-50 rounded-xl p-4">
+                <p className="text-xs text-gray-500 mb-2">{t('О себе')}</p>
+                <p className="text-sm text-gray-700 whitespace-pre-line">
+                  {profileUser.profile?.bio ?? t('Пользователь пока не добавил описание.')}
+                </p>
+              </div>
+              <div className="bg-gray-50 rounded-xl p-4">
                 <div className="flex items-center justify-between mb-3">
                   <h4>{t('Отзывы')}</h4>
                   <span className="text-sm text-gray-600">

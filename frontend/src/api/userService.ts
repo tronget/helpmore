@@ -9,6 +9,7 @@ export interface UserProfileResponse {
   middleName: string | null;
   avatar: string | null;
   faculty: string | null;
+  bio: string | null;
   phoneNumber: string | null;
   telegram: string | null;
   rate: number;
@@ -29,6 +30,7 @@ export interface UserProfileRequest {
   middleName?: string | null;
   avatar?: string | null;
   faculty?: string | null;
+  bio?: string | null;
   phoneNumber?: string | null;
   telegram?: string | null;
 }
@@ -58,10 +60,12 @@ export interface ReportUpdateRequest {
 
 export interface ReportResponse {
   id: number;
-  userId: number;
+  reporterId: number;
   reporterName?: string | null;
+  reporterSurname?: string | null;
   reportedUserId: number;
-  reportedName?: string | null;
+  reportedUserName?: string | null;
+  reportedUserSurname?: string | null;
   type: ReportType;
   title: string;
   description: string | null;

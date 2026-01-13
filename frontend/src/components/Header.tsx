@@ -14,7 +14,7 @@ interface HeaderProps {
 }
 
 export function Header({ onNavigateHome, onNavigateProfile, onNavigateChat, onNavigateAdmin }: HeaderProps) {
-  const { user } = useAuthStore();
+  const { user, isAuthenticated } = useAuthStore();
   const { t, locale, setLocale, locales, localeFlagsMap, localeLabelsMap } = useI18n();
   const displayName =
     [user?.profile?.surname, user?.profile?.name, user?.profile?.middleName]
@@ -26,6 +26,39 @@ export function Header({ onNavigateHome, onNavigateProfile, onNavigateChat, onNa
     : null;
   const hasAvatar = Boolean(avatarSrc);
   const canManage = user?.role === 'admin' || user?.role === 'moderator';
+
+  if (!isAuthenticated) {
+    return (
+      <header className="fixed top-0 left-0 right-0 bg-white border-b border-gray-200 z-50" style={{ height: '72px' }}>
+        <div className="max-w-[1440px] mx-auto px-8 h-full flex items-center justify-between">
+          <button
+            onClick={onNavigateHome}
+            className="flex items-center gap-3 hover:opacity-80 transition-opacity"
+            aria-label={t('Главная')}
+          >
+            <img src={logo} alt={t('Логотип HelpMore')} className="w-10 h-10" />
+          </button>
+          <Select value={locale} onValueChange={(value) => setLocale(value as Locale)}>
+            <SelectTrigger
+              className="w-[148px] justify-between hover:bg-gray-50"
+              aria-label={t('Язык')}
+            >
+              <span className="text-xl">{localeFlagsMap[locale]}</span>
+              <span className="text-sm text-gray-900">{localeLabelsMap[locale]}</span>
+            </SelectTrigger>
+            <SelectContent align="end">
+              {locales.map((loc) => (
+                <SelectItem key={loc} value={loc}>
+                  <span className="text-xl">{localeFlagsMap[loc]}</span>
+                  <span>{localeLabelsMap[loc]}</span>
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+      </header>
+    );
+  }
 
   return (
     <header className="fixed top-0 left-0 right-0 bg-white border-b border-gray-200 z-50" style={{ height: '72px' }}>

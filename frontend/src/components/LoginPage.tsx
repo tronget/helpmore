@@ -118,10 +118,10 @@ export function LoginPage({ onLogin }: LoginPageProps) {
   }, [navigatePopupToAuth, openPopupShell]);
 
   return (
-    <div className="min-h-screen bg-white flex items-center justify-center">
+    <div className="min-h-screen bg-white flex items-center justify-center pt-[72px]">
       <div className="max-w-md w-full px-8">
         <div className="text-center mb-12">
-          <img src={logo} alt="ITMO" className="w-24 h-24 mx-auto mb-6" />
+          <img src={logo} alt={t('Логотип HelpMore')} className="w-24 h-24 mx-auto mb-6" />
           <h1 className="mb-3">{t('Добро пожаловать')}</h1>
           <p className="text-gray-600">{t('Платформа поиска и размещения услуг для студентов, выпускников и сотрудников ИТМО')}</p>
         </div>
@@ -135,7 +135,7 @@ export function LoginPage({ onLogin }: LoginPageProps) {
             className="w-full bg-white border-2 border-gray-900 text-gray-900 py-4 px-6 rounded-xl hover:bg-gray-50 transition-colors flex items-center justify-between relative disabled:opacity-50 disabled:cursor-not-allowed"
           >
             <div className="flex items-center justify-center w-8 h-8 rounded-full flex-shrink-0">
-              <img src={YANDEX_ICON} alt="Яндекс ID" className="w-8 h-8" />
+              <img src={YANDEX_ICON} alt={t('Яндекс ID')} className="w-8 h-8" />
             </div>
             <span className="absolute left-1/2 -translate-x-1/2">
               {isSubmitting ? t('Входим...') : t('Войти через Яндекс')}
