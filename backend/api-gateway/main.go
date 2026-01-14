@@ -6,6 +6,7 @@ import (
 	"net/http/httputil"
 	"net/url"
 	"os"
+	"time"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/jmoiron/sqlx"
@@ -34,6 +35,7 @@ func main() {
 	userProxy := http.StripPrefix("/user", proxyURL("http://user-service:8282"))
 	commProxy := http.StripPrefix("/comm", proxyURL("http://communication-service:8002"))
 	servProxy := http.StripPrefix("/serv", proxyURL("http://management-service:8181"))
+	cache := middleware.NewResponseCache(5*time.Second, 512*1024, 512)
 
 	r := chi.NewRouter()
 	r.Use(middleware.CORS)
@@ -42,18 +44,18 @@ func main() {
 		r.Handle("/auth/*", userProxy)
 
 		r.Group(func(r chi.Router) {
-			r.Use(middleware.YandexToken(db), middleware.EnsureUserAllowed(db))
+			r.Use(middleware.YandexToken(db), middleware.EnsureUserAllowed(db), cache.Handler)
 			r.Handle("/*", userProxy)
 		})
 	})
 
 	r.Route("/comm", func(r chi.Router) {
-		r.Use(middleware.YandexToken(db), middleware.EnsureUserAllowed(db))
+		r.Use(middleware.YandexToken(db), middleware.EnsureUserAllowed(db), cache.Handler)
 		r.Handle("/*", commProxy)
 	})
 
 	r.Route("/serv", func(r chi.Router) {
-		r.Use(middleware.YandexToken(db), middleware.EnsureUserAllowed(db))
+		r.Use(middleware.YandexToken(db), middleware.EnsureUserAllowed(db), cache.Handler)
 		r.Handle("/*", servProxy)
 	})
 

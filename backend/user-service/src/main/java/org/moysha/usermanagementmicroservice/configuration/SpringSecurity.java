@@ -28,7 +28,8 @@ public class SpringSecurity {
                         .requestMatchers("/", "/auth/**").permitAll()
                         .requestMatchers("/swagger-ui/**", "/swagger-resources/**", "/v3/api-docs/**").permitAll()
                         .requestMatchers("/admin/**").hasRole("admin")
-                        .anyRequest().authenticated())
+                    .anyRequest().authenticated())
+                .headers(headers -> headers.cacheControl(cache -> cache.disable()))
                 .addFilterBefore(securityFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();

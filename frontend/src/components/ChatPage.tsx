@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { CheckCircle2, Send, Star, X } from 'lucide-react';
+import { CheckCircle2, Image, Send, Star, X } from 'lucide-react';
 import {
   getChatsWhereUserIsOwner,
   getChatsWhereUserIsSender,
@@ -58,8 +58,16 @@ export function ChatPage({ selectedChatId }: ChatPageProps) {
   const [messages, setMessages] = useState<MessageDto[]>([]);
   const [isMessagesLoading, setIsMessagesLoading] = useState(false);
   const [messageText, setMessageText] = useState('');
+  const [attachedImage, setAttachedImage] = useState<
+    { name: string; base64: string; mime: string }
+    | null
+  >(null);
+  const [isSending, setIsSending] = useState(false);
   const [ws, setWs] = useState<WebSocket | null>(null);
   const currentResponseIdRef = useRef<number | null>(null);
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
+
+  const MAX_IMAGE_BYTES = 8 * 1024 * 1024;
 
   useEffect(() => {
     if (!user?.id) {
@@ -365,22 +373,75 @@ export function ChatPage({ selectedChatId }: ChatPageProps) {
     };
   }, [currentChat?.response_id]);
 
-  const handleSendMessage = async () => {
-    if (!currentChat || !messageText.trim()) {
+  const readFileToBase64 = (file: File) =>
+    new Promise<string>((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => {
+        const result = reader.result;
+        if (typeof result === 'string') {
+          const commaIndex = result.indexOf(',');
+          resolve(commaIndex >= 0 ? result.slice(commaIndex + 1) : result);
+        } else {
+          reject(new Error('Не удалось прочитать файл.'));
+        }
+      };
+      reader.onerror = () => reject(new Error('Не удалось прочитать файл.'));
+      reader.readAsDataURL(file);
+    });
+
+  const handleSelectImage = async (files: FileList | null) => {
+    if (!files || files.length === 0) {
       return;
     }
+
+    const file = files[0];
+    if (file.size > MAX_IMAGE_BYTES) {
+      setError(t('Файл слишком большой (макс. 8 МБ).'));
+      return;
+    }
+
+    try {
+      const base64 = await readFileToBase64(file);
+      setAttachedImage({ name: file.name, base64, mime: file.type || 'image/png' });
+      setError(null);
+    } catch (err) {
+      const message = err instanceof Error ? err.message : t('Не удалось прикрепить изображение.');
+      setError(message);
+    } finally {
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
+    }
+  };
+
+  const handleSendMessage = async () => {
     const text = messageText.trim();
+    if (isSending) {
+      return;
+    }
+    if (!currentChat || (!text && !attachedImage)) {
+      return;
+    }
     if (text.length > 5000) {
       setError(t('Невозможно продолжить: сообщение должно быть не более 5000 символов.'));
       return;
     }
+    setIsSending(true);
+    setError(null);
     setMessageText('');
     try {
-      const msg = await sendMessage(token ?? '', currentChat.response_id, { text });
+      const msg = await sendMessage(token ?? '', currentChat.response_id, {
+        text: text || undefined,
+        image_base64: attachedImage?.base64,
+      });
       setMessages((prev) => [...prev, msg]);
+      setMessageText('');
+      setAttachedImage(null);
     } catch (err) {
       const message = err instanceof Error ? err.message : t('Не удалось отправить сообщение.');
       setError(message);
+    } finally {
+      setIsSending(false);
     }
   };
 
@@ -672,29 +733,68 @@ export function ChatPage({ selectedChatId }: ChatPageProps) {
               </div>
 
               <div className="bg-white border-t border-gray-200 p-4">
-                <div className="flex items-center gap-3">
-                  <input
-                    value={messageText}
-                    onChange={(e) => setMessageText(e.target.value)}
-                    maxLength={5000}
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter' && !e.shiftKey) {
-                        e.preventDefault();
-                        handleSendMessage();
-                      }
-                    }}
-                    placeholder={t('Напишите сообщение...')}
-                    aria-label={t('Напишите сообщение...')}
-                    className="flex-1 px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary"
-                  />
-                  <button
-                    onClick={handleSendMessage}
-                    className="px-4 py-3 rounded-xl bg-primary text-white hover:bg-primary-light disabled:opacity-60 flex items-center gap-2"
-                    disabled={!messageText.trim()}
-                  >
-                    <Send className="w-4 h-4" />
-                    {t('Отправить')}
-                  </button>
+                <div className="flex flex-col gap-3">
+                  {attachedImage ? (
+                    <div className="flex items-center gap-3 rounded-lg border border-gray-200 bg-gray-50 px-3 py-2">
+                      <img
+                        src={`data:${attachedImage.mime};base64,${attachedImage.base64}`}
+                        alt={attachedImage.name}
+                        className="h-12 w-12 rounded-md object-cover"
+                      />
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm text-gray-800 truncate">{attachedImage.name}</p>
+                        <p className="text-xs text-gray-500">{t('Изображение прикреплено')}</p>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => setAttachedImage(null)}
+                        className="p-2 text-gray-500 hover:text-gray-700"
+                        aria-label={t('Удалить изображение')}
+                      >
+                        <X className="w-4 h-4" />
+                      </button>
+                    </div>
+                  ) : null}
+
+                  <div className="flex items-center gap-3">
+                    <input
+                      value={messageText}
+                      onChange={(e) => setMessageText(e.target.value)}
+                      maxLength={5000}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' && !e.shiftKey) {
+                          e.preventDefault();
+                          handleSendMessage();
+                        }
+                      }}
+                      placeholder={t('Напишите сообщение...')}
+                      aria-label={t('Напишите сообщение...')}
+                      className="flex-1 px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary"
+                    />
+                    <input
+                      type="file"
+                      accept="image/*"
+                      ref={fileInputRef}
+                      style={{ display: 'none' }}
+                      onChange={(event) => handleSelectImage(event.target.files)}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => fileInputRef.current?.click()}
+                      className="p-3 rounded-xl border border-gray-300 text-gray-700 hover:bg-gray-50"
+                      aria-label={t('Прикрепить изображение')}
+                    >
+                      <Image className="w-5 h-5" />
+                    </button>
+                    <button
+                      onClick={handleSendMessage}
+                      className="px-4 py-3 rounded-xl bg-primary text-white hover:bg-primary-light disabled:opacity-60 flex items-center gap-2"
+                      disabled={isSending || (!messageText.trim() && !attachedImage)}
+                    >
+                      <Send className="w-4 h-4" />
+                      {isSending ? t('Отправляем...') : t('Отправить')}
+                    </button>
+                  </div>
                 </div>
               </div>
             </>
