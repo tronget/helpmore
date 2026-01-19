@@ -87,22 +87,58 @@
 В 1-м этапе была предложена сервисно-ориентированная архитектура (SOA) с разделением фронтенда и бэкенда и модулями бэкенда: API gateway, User Management Service, Communication service, Management service, работающими через REST.
 
 #image("Снимок экрана 2025-12-22 в 00.06.24.png")
-
+#pagebreak()
 == Диаграмма классов User Management Service
+*Общая диаграмма классов*
+#image("UserServiceCommonDiagram.png")
+#pagebreak()
 
-#image("Снимок экрана 2025-12-22 в 00.55.06.png")
+*Диаграмма классов configuration *
+#image("configuration.png", height: 7cm)
 
+*Диаграмма классов controllers*
+#image("controllers.png", height: 7cm)
+
+*Диаграмма классов models*
+#image("models.png", height: 7cm)
+#pagebreak()
+*Диаграмма интерфейсов repositories*
+#image("repositories.png", height: 10cm)
+*Диаграмма классов services*
+#image("services.png", height: 10cm)
+
+
+
+#pagebreak()
 == Диаграмма классов Management Service
+*Общая диаграмма классов*
+#image("ManagementCommon.png")
+#pagebreak()
+*Диаграмма классов config *
+#image("configM.png", height: 7cm)
+*Диаграмма классов controller*
+#image("controllerM.png", height: 14cm)
+#pagebreak()
+*Диаграмма классов models*
+#image("domainM.png", height: 20cm)
+#pagebreak()
+*Диаграмма интерфейсов repositories*
+#image("repositoryM.png", height: 11cm)
+*Диаграмма классов services*
+#image("serviceM.png", height: 11cm
+)
 
-#image("Снимок экрана 2025-12-22 в 01.44.15.png")
+
+
 
 == Диаграмма классов Communication Service
-
-#image("Снимок экрана 2025-12-22 в 02.25.08.png")
+#image("Снимок экрана 2026-01-19 в 16.16.23.png")
 
 == Диаграмма классов API Gateway
 
-#image("Снимок экрана 2025-12-22 в 02.39.19.png")
+#image("Снимок экрана 2026-01-19 в 15.46.04.png")
+
+
 
 = Вывод
 
