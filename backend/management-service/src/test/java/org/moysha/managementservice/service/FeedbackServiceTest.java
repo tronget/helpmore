@@ -58,7 +58,7 @@ class FeedbackServiceTest extends IntegrationTestBase {
     }
 
     @Test
-    void createFeedbackAndPreventDuplicates() {
+    void createFeedbackAndUpdatesExisting() {
         FeedbackDto feedback = feedbackService.create(serviceId, new CreateFeedbackRequest(
             reviewer.getId(),
             (short) 5,
@@ -68,13 +68,14 @@ class FeedbackServiceTest extends IntegrationTestBase {
         assertThat(feedback.getId()).isNotNull();
         assertThat(feedback.getRate()).isEqualTo((short) 5);
 
-        assertThrows(ConflictException.class, () ->
-            feedbackService.create(serviceId, new CreateFeedbackRequest(
-                reviewer.getId(),
-                (short) 4,
-                "дубль"
-            ))
-        );
+        FeedbackDto updated = feedbackService.create(serviceId, new CreateFeedbackRequest(
+            reviewer.getId(),
+            (short) 4,
+            "дубль"
+        ));
+        assertThat(updated.getId()).isEqualTo(feedback.getId());
+        assertThat(updated.getRate()).isEqualTo((short) 4);
+        assertThat(updated.getReview()).isEqualTo("дубль");
     }
 
     @Test
@@ -113,7 +114,7 @@ class FeedbackServiceTest extends IntegrationTestBase {
         AppUserEntity user = new AppUserEntity();
         user.setEmail(email);
         user.setToken(email + "-token");
-        user.setRole(org.moysha.managementservice.domain.user.UserRole.USER);
+        user.setRole(org.moysha.managementservice.domain.user.UserRole.user);
         return appUserRepository.save(user);
     }
 

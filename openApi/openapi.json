@@ -1,0 +1,1181 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "HelpMore API",
+    "version": "1.0.0",
+    "description": "Reference OpenAPI specification for documentation purposes. This file is not wired into runtime."
+  },
+  "servers": [
+    { "url": "http://localhost:8000", "description": "API Gateway" }
+  ],
+  "tags": [
+    { "name": "gateway", "description": "API Gateway routes" },
+    { "name": "user", "description": "User service routes" },
+    { "name": "communication", "description": "Communication service routes" },
+    { "name": "management", "description": "Management service routes" }
+  ],
+  "paths": {
+    "/comm/healthz": {
+      "get": {
+        "tags": ["communication"],
+        "summary": "Communication service healthcheck",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": { "text/plain": { "schema": { "type": "string", "example": "ok" } } }
+          }
+        }
+      }
+    },
+    "/user/auth/yandex": {
+      "post": {
+        "tags": ["user"],
+        "summary": "Authenticate with Yandex",
+        "requestBody": {
+          "required": true,
+          "content": { "application/json": { "schema": { "$ref": "#/components/schemas/YandexTokenRequest" } } }
+        },
+        "responses": {
+          "200": {
+            "description": "Token issued",
+            "content": {
+              "text/plain": { "schema": { "type": "string" } },
+              "application/json": { "schema": { "type": "string" } }
+            }
+          },
+          "400": { "description": "Bad request" },
+          "401": { "description": "Unauthorized" }
+        }
+      }
+    },
+    "/user/users": {
+      "get": {
+        "tags": ["user"],
+        "summary": "List users",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": { "application/json": { "schema": { "type": "array", "items": { "$ref": "#/components/schemas/UserResponse" } } } }
+          }
+        },
+        "security": [ { "BearerAuth": [] } ]
+      }
+    },
+    "/user/users/{id}": {
+      "get": {
+        "tags": ["user"],
+        "summary": "Get user by id",
+        "parameters": [ { "$ref": "#/components/parameters/UserId" } ],
+        "responses": {
+          "200": { "description": "OK", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/UserResponse" } } } },
+          "404": { "description": "Not found" }
+        }
+      },
+      "delete": {
+        "tags": ["user"],
+        "summary": "Delete user",
+        "parameters": [ { "$ref": "#/components/parameters/UserId" } ],
+        "responses": {
+          "204": { "description": "No Content" },
+          "401": { "description": "Unauthorized" },
+          "403": { "description": "Forbidden" }
+        },
+        "security": [ { "BearerAuth": [] } ]
+      }
+    },
+    "/user/users/me": {
+      "get": {
+        "tags": ["user"],
+        "summary": "Get current user",
+        "responses": {
+          "200": { "description": "OK", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/UserMeResponse" } } } },
+          "401": { "description": "Unauthorized" }
+        },
+        "security": [ { "BearerAuth": [] } ]
+      }
+    },
+    "/user/users/{id}/role": {
+      "patch": {
+        "tags": ["user"],
+        "summary": "Update user role",
+        "parameters": [ { "$ref": "#/components/parameters/UserId" } ],
+        "requestBody": {
+          "required": true,
+          "content": { "application/json": { "schema": { "$ref": "#/components/schemas/UserRoleUpdateRequest" } } }
+        },
+        "responses": {
+          "200": { "description": "OK", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/UserResponse" } } } },
+          "401": { "description": "Unauthorized" },
+          "403": { "description": "Forbidden" }
+        },
+        "security": [ { "BearerAuth": [] } ]
+      }
+    },
+    "/user/users/{id}/profile": {
+      "patch": {
+        "tags": ["user"],
+        "summary": "Update user profile",
+        "parameters": [ { "$ref": "#/components/parameters/UserId" } ],
+        "requestBody": {
+          "required": true,
+          "content": { "application/json": { "schema": { "$ref": "#/components/schemas/UserProfileRequest" } } }
+        },
+        "responses": {
+          "200": { "description": "OK", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/UserResponse" } } } },
+          "401": { "description": "Unauthorized" }
+        },
+        "security": [ { "BearerAuth": [] } ]
+      }
+    },
+    "/user/users/{id}/ban": {
+      "patch": {
+        "tags": ["user"],
+        "summary": "Update user ban status",
+        "parameters": [ { "$ref": "#/components/parameters/UserId" } ],
+        "requestBody": {
+          "required": true,
+          "content": { "application/json": { "schema": { "$ref": "#/components/schemas/UserBanRequest" } } }
+        },
+        "responses": {
+          "200": { "description": "OK", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/UserResponse" } } } },
+          "401": { "description": "Unauthorized" },
+          "403": { "description": "Forbidden" }
+        },
+        "security": [ { "BearerAuth": [] } ]
+      }
+    },
+    "/user/bug-reports": {
+      "get": {
+        "tags": ["user"],
+        "summary": "List all bug reports",
+        "responses": {
+          "200": { "description": "OK", "content": { "application/json": { "schema": { "type": "array", "items": { "$ref": "#/components/schemas/BugReportResponse" } } } } }
+        },
+        "security": [ { "BearerAuth": [] } ]
+      },
+      "post": {
+        "tags": ["user"],
+        "summary": "Create bug report",
+        "requestBody": {
+          "required": true,
+          "content": { "application/json": { "schema": { "$ref": "#/components/schemas/BugReportCreateRequest" } } }
+        },
+        "responses": {
+          "201": { "description": "Created", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/BugReportResponse" } } } },
+          "401": { "description": "Unauthorized" }
+        },
+        "security": [ { "BearerAuth": [] } ]
+      }
+    },
+    "/user/bug-reports/me": {
+      "get": {
+        "tags": ["user"],
+        "summary": "List my bug reports",
+        "responses": {
+          "200": { "description": "OK", "content": { "application/json": { "schema": { "type": "array", "items": { "$ref": "#/components/schemas/BugReportResponse" } } } } },
+          "401": { "description": "Unauthorized" }
+        },
+        "security": [ { "BearerAuth": [] } ]
+      }
+    },
+    "/user/bug-reports/{id}": {
+      "patch": {
+        "tags": ["user"],
+        "summary": "Update bug report",
+        "parameters": [ { "$ref": "#/components/parameters/BugReportId" } ],
+        "requestBody": {
+          "required": true,
+          "content": { "application/json": { "schema": { "$ref": "#/components/schemas/BugReportUpdateRequest" } } }
+        },
+        "responses": {
+          "200": { "description": "OK", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/BugReportResponse" } } } },
+          "401": { "description": "Unauthorized" }
+        },
+        "security": [ { "BearerAuth": [] } ]
+      },
+      "delete": {
+        "tags": ["user"],
+        "summary": "Delete bug report",
+        "parameters": [ { "$ref": "#/components/parameters/BugReportId" } ],
+        "responses": {
+          "204": { "description": "No Content" },
+          "401": { "description": "Unauthorized" }
+        },
+        "security": [ { "BearerAuth": [] } ]
+      }
+    },
+    "/user/reports": {
+      "get": {
+        "tags": ["user"],
+        "summary": "List all reports",
+        "responses": {
+          "200": { "description": "OK", "content": { "application/json": { "schema": { "type": "array", "items": { "$ref": "#/components/schemas/ReportResponse" } } } } },
+          "401": { "description": "Unauthorized" },
+          "403": { "description": "Forbidden" }
+        },
+        "security": [ { "BearerAuth": [] } ]
+      },
+      "post": {
+        "tags": ["user"],
+        "summary": "Create report",
+        "requestBody": {
+          "required": true,
+          "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ReportCreateRequest" } } }
+        },
+        "responses": {
+          "201": { "description": "Created", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ReportResponse" } } } },
+          "401": { "description": "Unauthorized" }
+        },
+        "security": [ { "BearerAuth": [] } ]
+      }
+    },
+    "/user/reports/me": {
+      "get": {
+        "tags": ["user"],
+        "summary": "List my reports",
+        "responses": {
+          "200": { "description": "OK", "content": { "application/json": { "schema": { "type": "array", "items": { "$ref": "#/components/schemas/ReportResponse" } } } } },
+          "401": { "description": "Unauthorized" }
+        },
+        "security": [ { "BearerAuth": [] } ]
+      }
+    },
+    "/user/reports/{id}": {
+      "patch": {
+        "tags": ["user"],
+        "summary": "Update report",
+        "parameters": [ { "$ref": "#/components/parameters/ReportId" } ],
+        "requestBody": {
+          "required": true,
+          "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ReportUpdateRequest" } } }
+        },
+        "responses": {
+          "200": { "description": "OK", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ReportResponse" } } } },
+          "401": { "description": "Unauthorized" }
+        },
+        "security": [ { "BearerAuth": [] } ]
+      },
+      "delete": {
+        "tags": ["user"],
+        "summary": "Delete report",
+        "parameters": [ { "$ref": "#/components/parameters/ReportId" } ],
+        "responses": {
+          "204": { "description": "No Content" },
+          "401": { "description": "Unauthorized" }
+        },
+        "security": [ { "BearerAuth": [] } ]
+      }
+    },
+    "/comm/responses/chats/sent": {
+      "get": {
+        "tags": ["communication"],
+        "summary": "List chats where user is sender",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": { "application/json": { "schema": { "type": "array", "items": { "$ref": "#/components/schemas/ResponseChat" } } } }
+          }
+        },
+        "security": [ { "BearerAuth": [] } ]
+      }
+    },
+    "/comm/responses/chats/owned": {
+      "get": {
+        "tags": ["communication"],
+        "summary": "List chats where user is owner",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": { "application/json": { "schema": { "type": "array", "items": { "$ref": "#/components/schemas/ResponseChat" } } } }
+          }
+        },
+        "security": [ { "BearerAuth": [] } ]
+      }
+    },
+    "/comm/responses/{responseId}/messages": {
+      "get": {
+        "tags": ["communication"],
+        "summary": "Get messages",
+        "parameters": [
+          { "$ref": "#/components/parameters/ResponseId" },
+          { "$ref": "#/components/parameters/AfterId" },
+          { "$ref": "#/components/parameters/Limit" }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": { "application/json": { "schema": { "type": "array", "items": { "$ref": "#/components/schemas/MessageResponse" } } } }
+          }
+        },
+        "security": [ { "BearerAuth": [] } ]
+      },
+      "post": {
+        "tags": ["communication"],
+        "summary": "Create message",
+        "parameters": [ { "$ref": "#/components/parameters/ResponseId" } ],
+        "requestBody": {
+          "required": true,
+          "content": { "application/json": { "schema": { "$ref": "#/components/schemas/CreateMessageRequest" } } }
+        },
+        "responses": {
+          "201": {
+            "description": "Created",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/MessageResponse" } } }
+          },
+          "400": { "description": "Bad request" },
+          "401": { "description": "Unauthorized" },
+          "403": { "description": "Forbidden" }
+        },
+        "security": [ { "BearerAuth": [] } ]
+      }
+    },
+    "/comm/ws": {
+      "get": {
+        "tags": ["communication"],
+        "summary": "WebSocket connect",
+        "responses": {
+          "101": { "description": "Switching Protocols" }
+        },
+        "security": [ { "BearerAuth": [] } ]
+      }
+    },
+    "/serv/api/services": {
+      "post": {
+        "tags": ["management"],
+        "summary": "Create service",
+        "requestBody": {
+          "required": true,
+          "content": { "application/json": { "schema": { "$ref": "#/components/schemas/CreateServiceRequest" } } }
+        },
+        "responses": {
+          "201": { "description": "Created", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ServiceDto" } } } },
+          "400": { "description": "Bad request" }
+        },
+        "security": [ { "BearerAuth": [] } ]
+      }
+    },
+    "/serv/api/services/{serviceId}": {
+      "put": {
+        "tags": ["management"],
+        "summary": "Update service",
+        "parameters": [ { "$ref": "#/components/parameters/ServiceId" } ],
+        "requestBody": {
+          "required": true,
+          "content": { "application/json": { "schema": { "$ref": "#/components/schemas/UpdateServiceRequest" } } }
+        },
+        "responses": {
+          "200": { "description": "OK", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ServiceDto" } } } },
+          "400": { "description": "Bad request" }
+        },
+        "security": [ { "BearerAuth": [] } ]
+      },
+      "get": {
+        "tags": ["management"],
+        "summary": "Get service by id",
+        "parameters": [ { "$ref": "#/components/parameters/ServiceId" } ],
+        "responses": {
+          "200": { "description": "OK", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ServiceDto" } } } },
+          "404": { "description": "Not found" }
+        }
+      },
+      "delete": {
+        "tags": ["management"],
+        "summary": "Delete service",
+        "parameters": [
+          { "$ref": "#/components/parameters/ServiceId" },
+          { "$ref": "#/components/parameters/RequesterId" }
+        ],
+        "responses": {
+          "204": { "description": "No Content" }
+        },
+        "security": [ { "BearerAuth": [] } ]
+      }
+    },
+    "/serv/api/services/search": {
+      "post": {
+        "tags": ["management"],
+        "summary": "Search services",
+        "requestBody": {
+          "required": true,
+          "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ServiceSearchRequest" } } }
+        },
+        "parameters": [
+          { "$ref": "#/components/parameters/Page" },
+          { "$ref": "#/components/parameters/Size" },
+          { "$ref": "#/components/parameters/Sort" }
+        ],
+        "responses": {
+          "200": { "description": "OK", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/PageServiceDto" } } } }
+        }
+      }
+    },
+    "/serv/api/services/{serviceId}/status": {
+      "patch": {
+        "tags": ["management"],
+        "summary": "Change service status",
+        "parameters": [ { "$ref": "#/components/parameters/ServiceId" } ],
+        "requestBody": {
+          "required": true,
+          "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ChangeServiceStatusRequest" } } }
+        },
+        "responses": {
+          "200": { "description": "OK", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ServiceDto" } } } }
+        },
+        "security": [ { "BearerAuth": [] } ]
+      }
+    },
+    "/serv/api/services/{serviceId}/responses": {
+      "get": {
+        "tags": ["management"],
+        "summary": "List responses for service",
+        "parameters": [
+          { "$ref": "#/components/parameters/ServiceId" },
+          { "$ref": "#/components/parameters/Page" },
+          { "$ref": "#/components/parameters/Size" },
+          { "$ref": "#/components/parameters/Sort" }
+        ],
+        "responses": {
+          "200": { "description": "OK", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/PageResponseDto" } } } }
+        }
+      },
+      "post": {
+        "tags": ["management"],
+        "summary": "Create response",
+        "parameters": [ { "$ref": "#/components/parameters/ServiceId" } ],
+        "requestBody": {
+          "required": true,
+          "content": { "application/json": { "schema": { "$ref": "#/components/schemas/CreateResponseRequest" } } }
+        },
+        "responses": {
+          "201": { "description": "Created", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ResponseDto" } } } }
+        },
+        "security": [ { "BearerAuth": [] } ]
+      }
+    },
+    "/serv/api/services/{serviceId}/responses/active": {
+      "get": {
+        "tags": ["management"],
+        "summary": "List active responses for service",
+        "parameters": [
+          { "$ref": "#/components/parameters/ServiceId" },
+          { "$ref": "#/components/parameters/Page" },
+          { "$ref": "#/components/parameters/Size" },
+          { "$ref": "#/components/parameters/Sort" }
+        ],
+        "responses": {
+          "200": { "description": "OK", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/PageResponseDto" } } } }
+        }
+      }
+    },
+    "/serv/api/services/{serviceId}/responses/archived": {
+      "get": {
+        "tags": ["management"],
+        "summary": "List archived responses for service",
+        "parameters": [
+          { "$ref": "#/components/parameters/ServiceId" },
+          { "$ref": "#/components/parameters/Page" },
+          { "$ref": "#/components/parameters/Size" },
+          { "$ref": "#/components/parameters/Sort" }
+        ],
+        "responses": {
+          "200": { "description": "OK", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/PageResponseDto" } } } }
+        }
+      }
+    },
+    "/serv/api/services/{serviceId}/responses/{responseId}": {
+      "delete": {
+        "tags": ["management"],
+        "summary": "Delete response",
+        "parameters": [
+          { "$ref": "#/components/parameters/ServiceId" },
+          { "$ref": "#/components/parameters/ResponseId" },
+          { "$ref": "#/components/parameters/RequesterId" }
+        ],
+        "responses": { "204": { "description": "No Content" } },
+        "security": [ { "BearerAuth": [] } ]
+      }
+    },
+    "/serv/api/services/{serviceId}/responses/{responseId}/status": {
+      "patch": {
+        "tags": ["management"],
+        "summary": "Change response status",
+        "parameters": [
+          { "$ref": "#/components/parameters/ServiceId" },
+          { "$ref": "#/components/parameters/ResponseId" }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ChangeResponseStatusRequest" } } }
+        },
+        "responses": {
+          "200": { "description": "OK", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ResponseDto" } } } }
+        },
+        "security": [ { "BearerAuth": [] } ]
+      }
+    },
+    "/serv/api/users/{userId}/responses": {
+      "get": {
+        "tags": ["management"],
+        "summary": "List user responses",
+        "parameters": [
+          { "$ref": "#/components/parameters/UserId" },
+          { "$ref": "#/components/parameters/Page" },
+          { "$ref": "#/components/parameters/Size" },
+          { "$ref": "#/components/parameters/Sort" }
+        ],
+        "responses": {
+          "200": { "description": "OK", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/PageResponseDto" } } } }
+        }
+      }
+    },
+    "/serv/api/users/{userId}/responses/active": {
+      "get": {
+        "tags": ["management"],
+        "summary": "List active user responses",
+        "parameters": [
+          { "$ref": "#/components/parameters/UserId" },
+          { "$ref": "#/components/parameters/Page" },
+          { "$ref": "#/components/parameters/Size" },
+          { "$ref": "#/components/parameters/Sort" }
+        ],
+        "responses": {
+          "200": { "description": "OK", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/PageResponseDto" } } } }
+        }
+      }
+    },
+    "/serv/api/users/{userId}/responses/archived": {
+      "get": {
+        "tags": ["management"],
+        "summary": "List archived user responses",
+        "parameters": [
+          { "$ref": "#/components/parameters/UserId" },
+          { "$ref": "#/components/parameters/Page" },
+          { "$ref": "#/components/parameters/Size" },
+          { "$ref": "#/components/parameters/Sort" }
+        ],
+        "responses": {
+          "200": { "description": "OK", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/PageResponseDto" } } } }
+        }
+      }
+    },
+    "/serv/api/categories": {
+      "get": {
+        "tags": ["management"],
+        "summary": "List categories",
+        "responses": {
+          "200": { "description": "OK", "content": { "application/json": { "schema": { "type": "array", "items": { "$ref": "#/components/schemas/CategoryDto" } } } } }
+        }
+      },
+      "post": {
+        "tags": ["management"],
+        "summary": "Create category",
+        "requestBody": {
+          "required": true,
+          "content": { "application/json": { "schema": { "$ref": "#/components/schemas/CategoryRequest" } } }
+        },
+        "responses": {
+          "200": { "description": "OK", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/CategoryDto" } } } }
+        },
+        "security": [ { "BearerAuth": [] } ]
+      }
+    },
+    "/serv/api/categories/{id}": {
+      "put": {
+        "tags": ["management"],
+        "summary": "Rename category",
+        "parameters": [ { "$ref": "#/components/parameters/CategoryId" } ],
+        "requestBody": {
+          "required": true,
+          "content": { "application/json": { "schema": { "$ref": "#/components/schemas/CategoryRequest" } } }
+        },
+        "responses": {
+          "200": { "description": "OK", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/CategoryDto" } } } }
+        },
+        "security": [ { "BearerAuth": [] } ]
+      },
+      "delete": {
+        "tags": ["management"],
+        "summary": "Delete category",
+        "parameters": [ { "$ref": "#/components/parameters/CategoryId" } ],
+        "responses": { "204": { "description": "No Content" } },
+        "security": [ { "BearerAuth": [] } ]
+      }
+    },
+    "/serv/api/services/{serviceId}/feedback": {
+      "get": {
+        "tags": ["management"],
+        "summary": "List feedback for service",
+        "parameters": [
+          { "$ref": "#/components/parameters/ServiceId" },
+          { "$ref": "#/components/parameters/Page" },
+          { "$ref": "#/components/parameters/Size" },
+          { "$ref": "#/components/parameters/Sort" }
+        ],
+        "responses": {
+          "200": { "description": "OK", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/PageFeedbackDto" } } } }
+        }
+      },
+      "post": {
+        "tags": ["management"],
+        "summary": "Create feedback",
+        "parameters": [ { "$ref": "#/components/parameters/ServiceId" } ],
+        "requestBody": {
+          "required": true,
+          "content": { "application/json": { "schema": { "$ref": "#/components/schemas/CreateFeedbackRequest" } } }
+        },
+        "responses": {
+          "200": { "description": "OK", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/FeedbackDto" } } } }
+        },
+        "security": [ { "BearerAuth": [] } ]
+      }
+    },
+    "/serv/api/services/{serviceId}/feedback/{feedbackId}": {
+      "put": {
+        "tags": ["management"],
+        "summary": "Update feedback",
+        "parameters": [
+          { "$ref": "#/components/parameters/ServiceId" },
+          { "$ref": "#/components/parameters/FeedbackId" }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": { "application/json": { "schema": { "$ref": "#/components/schemas/UpdateFeedbackRequest" } } }
+        },
+        "responses": {
+          "200": { "description": "OK", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/FeedbackDto" } } } }
+        },
+        "security": [ { "BearerAuth": [] } ]
+      },
+      "delete": {
+        "tags": ["management"],
+        "summary": "Delete feedback",
+        "parameters": [
+          { "$ref": "#/components/parameters/ServiceId" },
+          { "$ref": "#/components/parameters/FeedbackId" },
+          { "$ref": "#/components/parameters/RequesterId" }
+        ],
+        "responses": { "204": { "description": "No Content" } },
+        "security": [ { "BearerAuth": [] } ]
+      }
+    },
+    "/serv/api/favorites": {
+      "get": {
+        "tags": ["management"],
+        "summary": "List favorites",
+        "parameters": [
+          { "$ref": "#/components/parameters/UserIdHeader" },
+          { "$ref": "#/components/parameters/Page" },
+          { "$ref": "#/components/parameters/Size" },
+          { "$ref": "#/components/parameters/Sort" }
+        ],
+        "responses": {
+          "200": { "description": "OK", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/PageFavoriteDto" } } } }
+        }
+      }
+    },
+    "/serv/api/services/{serviceId}/favorites": {
+      "post": {
+        "tags": ["management"],
+        "summary": "Add service to favorites",
+        "parameters": [
+          { "$ref": "#/components/parameters/ServiceId" },
+          { "$ref": "#/components/parameters/UserIdHeader" }
+        ],
+        "responses": {
+          "200": { "description": "OK", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/FavoriteDto" } } } }
+        }
+      },
+      "delete": {
+        "tags": ["management"],
+        "summary": "Remove service from favorites",
+        "parameters": [
+          { "$ref": "#/components/parameters/ServiceId" },
+          { "$ref": "#/components/parameters/UserIdHeader" }
+        ],
+        "responses": { "204": { "description": "No Content" } }
+      }
+    },
+    "/serv/api/users/{userId}/services/status": {
+      "patch": {
+        "tags": ["management"],
+        "summary": "Change user services status",
+        "parameters": [ { "$ref": "#/components/parameters/UserId" } ],
+        "requestBody": {
+          "required": true,
+          "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ChangeServiceStatusRequest" } } }
+        },
+        "responses": {
+          "200": { "description": "OK", "content": { "application/json": { "schema": { "type": "array", "items": { "$ref": "#/components/schemas/ServiceDto" } } } } }
+        },
+        "security": [ { "BearerAuth": [] } ]
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "BearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "JWT"
+      }
+    },
+    "parameters": {
+      "UserId": {
+        "name": "id",
+        "in": "path",
+        "required": true,
+        "schema": { "type": "integer", "format": "int32" }
+      },
+      "BugReportId": {
+        "name": "id",
+        "in": "path",
+        "required": true,
+        "schema": { "type": "integer", "format": "int32" }
+      },
+      "ReportId": {
+        "name": "id",
+        "in": "path",
+        "required": true,
+        "schema": { "type": "integer", "format": "int32" }
+      },
+      "ServiceId": {
+        "name": "serviceId",
+        "in": "path",
+        "required": true,
+        "schema": { "type": "integer", "format": "int64" }
+      },
+      "ResponseId": {
+        "name": "responseId",
+        "in": "path",
+        "required": true,
+        "schema": { "type": "integer", "format": "int64" }
+      },
+      "FeedbackId": {
+        "name": "feedbackId",
+        "in": "path",
+        "required": true,
+        "schema": { "type": "integer", "format": "int64" }
+      },
+      "CategoryId": {
+        "name": "id",
+        "in": "path",
+        "required": true,
+        "schema": { "type": "integer", "format": "int64" }
+      },
+      "RequesterId": {
+        "name": "requesterId",
+        "in": "query",
+        "required": true,
+        "schema": { "type": "integer", "format": "int64" }
+      },
+      "AfterId": {
+        "name": "after_id",
+        "in": "query",
+        "required": false,
+        "schema": { "type": "integer", "format": "int64" }
+      },
+      "Limit": {
+        "name": "limit",
+        "in": "query",
+        "required": false,
+        "schema": { "type": "integer", "format": "int32", "minimum": 1, "maximum": 200 }
+      },
+      "Page": {
+        "name": "page",
+        "in": "query",
+        "required": false,
+        "schema": { "type": "integer", "format": "int32", "minimum": 0 }
+      },
+      "Size": {
+        "name": "size",
+        "in": "query",
+        "required": false,
+        "schema": { "type": "integer", "format": "int32", "minimum": 1 }
+      },
+      "Sort": {
+        "name": "sort",
+        "in": "query",
+        "required": false,
+        "schema": { "type": "string" }
+      },
+      "UserIdHeader": {
+        "name": "X-User-Id",
+        "in": "header",
+        "required": true,
+        "schema": { "type": "integer", "format": "int64" }
+      }
+    },
+    "schemas": {
+      "YandexTokenRequest": {
+        "type": "object",
+        "properties": {
+          "token": { "type": "string" }
+        },
+        "required": ["token"]
+      },
+      "UserProfileRequest": {
+        "type": "object",
+        "properties": {
+          "name": { "type": "string" },
+          "surname": { "type": "string" },
+          "middleName": { "type": "string" },
+          "avatar": { "type": "string", "format": "byte" },
+          "faculty": { "type": "string" },
+          "bio": { "type": "string" },
+          "phoneNumber": { "type": "string" },
+          "telegram": { "type": "string" }
+        }
+      },
+      "UserProfileResponse": {
+        "type": "object",
+        "properties": {
+          "name": { "type": "string" },
+          "surname": { "type": "string" },
+          "middleName": { "type": "string" },
+          "avatar": { "type": "string", "format": "byte" },
+          "faculty": { "type": "string" },
+          "bio": { "type": "string" },
+          "phoneNumber": { "type": "string" },
+          "telegram": { "type": "string" },
+          "rate": { "type": "number", "format": "double" }
+        }
+      },
+      "UserResponse": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "integer", "format": "int32" },
+          "email": { "type": "string", "format": "email" },
+          "role": { "$ref": "#/components/schemas/UserRole" },
+          "bannedTill": { "type": "string", "format": "date-time" },
+          "createdAt": { "type": "string", "format": "date-time" },
+          "profile": { "$ref": "#/components/schemas/UserProfileResponse" }
+        }
+      },
+      "UserMeResponse": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "integer", "format": "int32" },
+          "email": { "type": "string", "format": "email" },
+          "role": { "type": "string" },
+          "name": { "type": "string" },
+          "surname": { "type": "string" },
+          "bio": { "type": "string" },
+          "phoneNumber": { "type": "string" },
+          "telegram": { "type": "string" },
+          "rate": { "type": "number", "format": "double" }
+        }
+      },
+      "UserRoleUpdateRequest": {
+        "type": "object",
+        "properties": {
+          "role": { "$ref": "#/components/schemas/UserRole" }
+        },
+        "required": ["role"]
+      },
+      "UserBanRequest": {
+        "type": "object",
+        "properties": {
+          "bannedTill": { "type": "string", "format": "date-time" }
+        }
+      },
+      "BugReportCreateRequest": {
+        "type": "object",
+        "properties": {
+          "title": { "type": "string" },
+          "description": { "type": "string" }
+        },
+        "required": ["title"]
+      },
+      "BugReportUpdateRequest": {
+        "type": "object",
+        "properties": {
+          "title": { "type": "string" },
+          "description": { "type": "string" }
+        }
+      },
+      "BugReportResponse": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "integer", "format": "int32" },
+          "userId": { "type": "integer", "format": "int32" },
+          "userName": { "type": "string" },
+          "userSurname": { "type": "string" },
+          "title": { "type": "string" },
+          "description": { "type": "string" },
+          "createdAt": { "type": "string", "format": "date-time" }
+        }
+      },
+      "ReportCreateRequest": {
+        "type": "object",
+        "properties": {
+          "reportedUserId": { "type": "integer", "format": "int32" },
+          "type": { "$ref": "#/components/schemas/ReportType" },
+          "title": { "type": "string" },
+          "description": { "type": "string" }
+        },
+        "required": ["reportedUserId", "type", "title"]
+      },
+      "ReportUpdateRequest": {
+        "type": "object",
+        "properties": {
+          "type": { "$ref": "#/components/schemas/ReportType" },
+          "title": { "type": "string" },
+          "description": { "type": "string" }
+        }
+      },
+      "ReportResponse": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "integer", "format": "int32" },
+          "reporterId": { "type": "integer", "format": "int32" },
+          "reporterName": { "type": "string" },
+          "reporterSurname": { "type": "string" },
+          "reportedUserId": { "type": "integer", "format": "int32" },
+          "reportedUserName": { "type": "string" },
+          "reportedUserSurname": { "type": "string" },
+          "type": { "$ref": "#/components/schemas/ReportType" },
+          "title": { "type": "string" },
+          "description": { "type": "string" },
+          "createdAt": { "type": "string", "format": "date-time" }
+        }
+      },
+      "MessageResponse": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "integer", "format": "int64" },
+          "response_id": { "type": "integer", "format": "int64" },
+          "sender_id": { "type": "integer", "format": "int64" },
+          "receiver_id": { "type": "integer", "format": "int64" },
+          "text": { "type": "string" },
+          "image_base64": { "type": "string" },
+          "created_at": { "type": "string", "format": "date-time" }
+        }
+      },
+      "CreateMessageRequest": {
+        "type": "object",
+        "properties": {
+          "text": { "type": "string" },
+          "image_base64": { "type": "string" }
+        }
+      },
+      "ResponseChat": {
+        "type": "object",
+        "properties": {
+          "response_id": { "type": "integer", "format": "int64" },
+          "service_id": { "type": "integer", "format": "int64" },
+          "service_title": { "type": "string" },
+          "sender_id": { "type": "integer", "format": "int64" },
+          "owner_id": { "type": "integer", "format": "int64" },
+          "response_created_at": { "type": "string", "format": "date-time" },
+          "last_message_id": { "type": "integer", "format": "int64" },
+          "last_message_at": { "type": "string", "format": "date-time" },
+          "last_message_text": { "type": "string" }
+        }
+      },
+      "ServiceDto": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "integer", "format": "int64" },
+          "ownerId": { "type": "integer", "format": "int64" },
+          "ownerEmail": { "type": "string" },
+          "categoryId": { "type": "integer", "format": "int64" },
+          "categoryName": { "type": "string" },
+          "title": { "type": "string" },
+          "description": { "type": "string" },
+          "type": { "$ref": "#/components/schemas/ServiceType" },
+          "status": { "$ref": "#/components/schemas/ServiceStatus" },
+          "price": { "type": "number", "format": "double" },
+          "barter": { "type": "boolean" },
+          "place": { "type": "string" },
+          "createdAt": { "type": "string", "format": "date-time" }
+        }
+      },
+      "ResponseDto": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "integer", "format": "int64" },
+          "serviceId": { "type": "integer", "format": "int64" },
+          "senderId": { "type": "integer", "format": "int64" },
+          "status": { "$ref": "#/components/schemas/ResponseStatus" },
+          "createdAt": { "type": "string", "format": "date-time" }
+        }
+      },
+      "CategoryDto": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "integer", "format": "int64" },
+          "name": { "type": "string" }
+        }
+      },
+      "FeedbackDto": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "integer", "format": "int64" },
+          "serviceId": { "type": "integer", "format": "int64" },
+          "senderId": { "type": "integer", "format": "int64" },
+          "rate": { "type": "integer", "format": "int32" },
+          "review": { "type": "string" },
+          "createdAt": { "type": "string", "format": "date-time" }
+        }
+      },
+      "FavoriteDto": {
+        "type": "object",
+        "properties": {
+          "userId": { "type": "integer", "format": "int64" },
+          "service": { "$ref": "#/components/schemas/ServiceDto" },
+          "createdAt": { "type": "string", "format": "date-time" }
+        }
+      },
+      "CreateServiceRequest": {
+        "type": "object",
+        "properties": {
+          "ownerId": { "type": "integer", "format": "int64" },
+          "categoryId": { "type": "integer", "format": "int64" },
+          "title": { "type": "string" },
+          "description": { "type": "string" },
+          "type": { "$ref": "#/components/schemas/ServiceType" },
+          "price": { "type": "number", "format": "double" },
+          "barter": { "type": "boolean" },
+          "place": { "type": "string" }
+        },
+        "required": ["ownerId", "categoryId", "title", "description", "type", "price", "barter"]
+      },
+      "UpdateServiceRequest": {
+        "type": "object",
+        "properties": {
+          "requesterId": { "type": "integer", "format": "int64" },
+          "categoryId": { "type": "integer", "format": "int64" },
+          "title": { "type": "string" },
+          "description": { "type": "string" },
+          "price": { "type": "number", "format": "double" },
+          "barter": { "type": "boolean" },
+          "place": { "type": "string" }
+        },
+        "required": ["requesterId"]
+      },
+      "ServiceSearchRequest": {
+        "type": "object",
+        "properties": {
+          "ownerId": { "type": "integer", "format": "int64" },
+          "categoryId": { "type": "integer", "format": "int64" },
+          "type": { "$ref": "#/components/schemas/ServiceType" },
+          "status": { "$ref": "#/components/schemas/ServiceStatus" },
+          "titleLike": { "type": "string" },
+          "minPrice": { "type": "number", "format": "double" },
+          "maxPrice": { "type": "number", "format": "double" },
+          "barterOnly": { "type": "boolean" },
+          "createdAfter": { "type": "string", "format": "date-time" },
+          "createdBefore": { "type": "string", "format": "date-time" }
+        }
+      },
+      "ChangeServiceStatusRequest": {
+        "type": "object",
+        "properties": {
+          "requesterId": { "type": "integer", "format": "int64" },
+          "status": { "$ref": "#/components/schemas/ServiceStatus" }
+        },
+        "required": ["requesterId", "status"]
+      },
+      "CreateResponseRequest": {
+        "type": "object",
+        "properties": {
+          "senderId": { "type": "integer", "format": "int64" }
+        },
+        "required": ["senderId"]
+      },
+      "ChangeResponseStatusRequest": {
+        "type": "object",
+        "properties": {
+          "requesterId": { "type": "integer", "format": "int64" },
+          "status": { "$ref": "#/components/schemas/ResponseStatus" }
+        },
+        "required": ["requesterId", "status"]
+      },
+      "CategoryRequest": {
+        "type": "object",
+        "properties": {
+          "name": { "type": "string" }
+        },
+        "required": ["name"]
+      },
+      "CreateFeedbackRequest": {
+        "type": "object",
+        "properties": {
+          "senderId": { "type": "integer", "format": "int64" },
+          "rate": { "type": "integer", "format": "int32" },
+          "review": { "type": "string" }
+        },
+        "required": ["senderId", "rate"]
+      },
+      "UpdateFeedbackRequest": {
+        "type": "object",
+        "properties": {
+          "senderId": { "type": "integer", "format": "int64" },
+          "rate": { "type": "integer", "format": "int32" },
+          "review": { "type": "string" }
+        },
+        "required": ["senderId", "rate"]
+      },
+      "PageServiceDto": {
+        "type": "object",
+        "properties": {
+          "content": { "type": "array", "items": { "$ref": "#/components/schemas/ServiceDto" } },
+          "totalElements": { "type": "integer", "format": "int64" },
+          "totalPages": { "type": "integer", "format": "int32" },
+          "size": { "type": "integer", "format": "int32" },
+          "number": { "type": "integer", "format": "int32" }
+        }
+      },
+      "PageResponseDto": {
+        "type": "object",
+        "properties": {
+          "content": { "type": "array", "items": { "$ref": "#/components/schemas/ResponseDto" } },
+          "totalElements": { "type": "integer", "format": "int64" },
+          "totalPages": { "type": "integer", "format": "int32" },
+          "size": { "type": "integer", "format": "int32" },
+          "number": { "type": "integer", "format": "int32" }
+        }
+      },
+      "PageFeedbackDto": {
+        "type": "object",
+        "properties": {
+          "content": { "type": "array", "items": { "$ref": "#/components/schemas/FeedbackDto" } },
+          "totalElements": { "type": "integer", "format": "int64" },
+          "totalPages": { "type": "integer", "format": "int32" },
+          "size": { "type": "integer", "format": "int32" },
+          "number": { "type": "integer", "format": "int32" }
+        }
+      },
+      "PageFavoriteDto": {
+        "type": "object",
+        "properties": {
+          "content": { "type": "array", "items": { "$ref": "#/components/schemas/FavoriteDto" } },
+          "totalElements": { "type": "integer", "format": "int64" },
+          "totalPages": { "type": "integer", "format": "int32" },
+          "size": { "type": "integer", "format": "int32" },
+          "number": { "type": "integer", "format": "int32" }
+        }
+      },
+      "UserRole": {
+        "type": "string",
+        "enum": ["user", "moderator", "admin"]
+      },
+      "ReportType": {
+        "type": "string",
+        "enum": ["spam", "fraud", "insult", "illegal", "other"]
+      },
+      "ServiceType": {
+        "type": "string",
+        "enum": ["OFFER", "ORDER"]
+      },
+      "ServiceStatus": {
+        "type": "string",
+        "enum": ["ACTIVE", "ARCHIVED"]
+      },
+      "ResponseStatus": {
+        "type": "string",
+        "enum": ["ACTIVE", "ARCHIVED"]
+      }
+    }
+  }
+}

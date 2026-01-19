@@ -106,11 +106,62 @@ class ServiceCatalogServiceTest extends IntegrationTestBase {
         assertThat(updated.getTitle()).isEqualTo("Mock интервью");
     }
 
+    @Test
+    void deleteRemovesServiceForOwner() {
+        ServiceDto created = serviceCatalogService.create(new CreateServiceRequest(
+            owner.getId(),
+            studyCategory.getId(),
+            "Разбор контрольной",
+            "Проверю и объясню",
+            ServiceType.OFFER,
+            new BigDecimal("900.00"),
+            false,
+            "ИТМО"
+        ));
+
+        serviceCatalogService.delete(created.getId(), owner.getId());
+
+        Page<ServiceDto> page = serviceCatalogService.search(new ServiceFilter(
+            owner.getId(),
+            studyCategory.getId(),
+            ServiceType.OFFER,
+            ServiceStatus.ACTIVE,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null
+        ), PageRequest.of(0, 5));
+        assertThat(page.getContent())
+            .noneMatch(service -> service.getId().equals(created.getId()));
+    }
+
+    @Test
+    void deleteRequiresOwner() {
+        AppUserEntity anotherUser = createUser("other@example.com");
+        ServiceDto created = serviceCatalogService.create(new CreateServiceRequest(
+            owner.getId(),
+            studyCategory.getId(),
+            "Помощь с тестами",
+            "Подготовлю вопросы",
+            ServiceType.OFFER,
+            new BigDecimal("1100.00"),
+            false,
+            "Онлайн"
+        ));
+
+        org.junit.jupiter.api.Assertions.assertThrows(
+            org.moysha.managementservice.exception.BadRequestException.class,
+            () -> serviceCatalogService.delete(created.getId(), anotherUser.getId())
+        );
+    }
+
     private AppUserEntity createUser(String email) {
         AppUserEntity user = new AppUserEntity();
         user.setEmail(email);
         user.setToken(email + "-token");
-        user.setRole(org.moysha.managementservice.domain.user.UserRole.USER);
+        user.setRole(org.moysha.managementservice.domain.user.UserRole.user);
         return appUserRepository.save(user);
     }
 

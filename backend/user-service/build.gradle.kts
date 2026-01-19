@@ -47,6 +47,10 @@ dependencies {
     testImplementation("org.springframework.boot:spring-boot-starter-security-test")
     testImplementation("org.springframework.boot:spring-boot-starter-validation-test")
     testImplementation("org.springframework.boot:spring-boot-starter-webmvc-test")
+    testImplementation(platform("org.testcontainers:testcontainers-bom:1.20.1"))
+    testImplementation("org.testcontainers:junit-jupiter")
+    testImplementation("org.testcontainers:postgresql")
+    testImplementation("org.testcontainers:jdbc")
     testRuntimeOnly("org.junit.platform:junit-platform-launcher")
 
 }
@@ -61,4 +65,8 @@ hibernate {
 
 tasks.withType<Test> {
     useJUnitPlatform()
+}
+
+tasks.matching { it.name in listOf("processTestAot", "testAot") }.configureEach {
+    enabled = false
 }
