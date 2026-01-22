@@ -1,0 +1,91 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Получение токена Яндекс ID</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <script src="https://yastatic.net/s3/passport-sdk/autofill/v1/sdk-suggest-token-with-polyfills-latest.js"></script>
+    <style>
+      body {
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+        background: #fff;
+        color: #0f172a;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 100vh;
+        margin: 0;
+      }
+    </style>
+  </head>
+  <body>
+    <p id="status">Подтверждаем авторизацию...</p>
+    <script>
+      (function () {
+        const statusEl = document.getElementById('status');
+        const start = Date.now();
+
+        function parseHash() {
+          const hash = window.location.hash.startsWith('#') ? window.location.hash.slice(1) : '';
+          const params = new URLSearchParams(hash);
+          const accessToken = params.get('access_token');
+          if (!accessToken) return null;
+          return {
+            access_token: accessToken,
+            expires_in: params.get('expires_in'),
+            token_type: params.get('token_type'),
+          };
+        }
+
+        function showToken(token) {
+          statusEl.textContent = 'Токен получен. Можно закрыть это окно.';
+          const info = document.createElement('pre');
+          info.style.whiteSpace = 'pre-wrap';
+          info.style.wordBreak = 'break-all';
+          info.textContent = token.access_token;
+          document.body.appendChild(info);
+        }
+
+        function sendTokenToOpener(payload) {
+          if (window.opener && !window.opener.closed) {
+            window.opener.postMessage(
+              {
+                type: 'yandex_oauth_token',
+                payload,
+              },
+              '*',
+            );
+            setTimeout(() => window.close(), 300);
+            return true;
+          }
+          return false;
+        }
+
+        function sendSuggestToken() {
+          if (typeof window.YaSendSuggestToken !== 'function') {
+            if (Date.now() - start > 5000) return;
+            setTimeout(sendSuggestToken, 100);
+            return;
+          }
+
+          try {
+            window.YaSendSuggestToken(window.location.origin, {
+              flag: true,
+            });
+          } catch (error) {
+            console.error('Не удалось передать токен', error);
+          }
+        }
+
+        const oauthToken = parseHash();
+        if (oauthToken) {
+          const sent = sendTokenToOpener(oauthToken);
+          showToken(oauthToken);
+          if (sent) return;
+        }
+
+        sendSuggestToken();
+      })();
+    </script>
+  </body>
+</html>
